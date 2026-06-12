@@ -12,7 +12,6 @@ const APP_CONTEXT_PATH =
 
 const DB_CONFIG = {
   apiBase: `${APP_CONTEXT_PATH}/admin`,
-  token: null, // JWT token after login
 };
 
 /* ───────────────────────────────────────────────────────────────
@@ -36,9 +35,6 @@ const API = {
   _h() {
     return {
       "Content-Type": "application/json",
-      ...(DB_CONFIG.token
-        ? { Authorization: `Bearer ${DB_CONFIG.token}` }
-        : {}),
     };
   },
 
@@ -377,7 +373,6 @@ function logout() {
       if (!response.ok) {
         throw new Error("Logout failed");
       }
-      localStorage.removeItem("authToken");
       Utils.toast("Đã đăng xuất thành công", "success");
       setTimeout(() => {
         window.location.href = `${APP_CONTEXT_PATH}/admin/login`;
