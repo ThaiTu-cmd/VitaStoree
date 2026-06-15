@@ -36,14 +36,7 @@
           <a class="nav-item" th:href="@{/admin/user/list}"
             ><span class="nav-icon">👥</span> Users</a
           >
-          <div class="nav-section-label">Marketing</div>
-          <a class="nav-item" th:href="@{/admin/marketing/discount}"
-            ><span class="nav-icon">🏷</span> Discounts</a
-          >
-          <div class="nav-section-label">Reviews</div>
-          <a class="nav-item" th:href="@{/admin/reviews/review}"
-            ><span class="nav-icon">⭐</span> Reviews</a
-          >
+
         </nav>
         <div class="sidebar-bottom">
           <div class="admin-profile">
@@ -118,7 +111,7 @@
                   <tr>
                     <th>ID</th>
                     <th>Name</th>
-                    <th>Slug</th>
+                    <th>Description</th>
                     <th>Products</th>
                     <th>Actions</th>
                   </tr>
@@ -168,17 +161,15 @@
             />
           </div>
           <div class="form-group">
-            <label class="form-label">Slug *</label>
-            <input
+            <label class="form-label">Mô tả</label>
+            <textarea
               class="form-control"
-              id="catFormSlug"
-              required
-              placeholder="vitamins-minerals"
-            />
-            <div class="form-hint">
-              Chữ thường, ngăn cách bằng dấu gạch ngang
-            </div>
+              id="catFormDesc"
+              placeholder="Mô tả danh mục..."
+              rows="3"
+            ></textarea>
           </div>
+          <input type="hidden" id="catFormSlug" />
         </div>
         <div class="modal-footer">
           <button
@@ -254,7 +245,7 @@
         <tr>
           <td class="td-mono">${c.id}</td>
           <td><strong>${c.name}</strong></td>
-          <td class="td-mono">${c.slug}</td>
+          <td style="color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.description || "—"}</td>
           <td><span class="badge badge-cyan">🛍 ${c.products} sản phẩm</span></td>
           <td>
             <div class="action-group">
@@ -272,7 +263,7 @@
         const q = document.getElementById("searchInput").value.toLowerCase();
         renderCats(
           allCats.filter(
-            (c) => c.name.toLowerCase().includes(q) || c.slug.includes(q),
+            (c) => c.name.toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q),
           ),
         );
       }
@@ -283,7 +274,7 @@
           "Thêm danh mục mới";
         document.getElementById("catFormId").value = "";
         document.getElementById("catFormName").value = "";
-        document.getElementById("catFormSlug").value = "";
+        document.getElementById("catFormDesc").value = "";
         Modal.open("catModalOverlay");
       }
 
@@ -293,31 +284,27 @@
           "Chỉnh sửa danh mục";
         document.getElementById("catFormId").value = cat.id;
         document.getElementById("catFormName").value = cat.name;
-        document.getElementById("catFormSlug").value = cat.slug;
+        document.getElementById("catFormDesc").value = cat.description || "";
         Modal.open("catModalOverlay");
       }
 
-      // Auto-generate slug from name
+      function generateSlug(name) {
+        return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-") || "untitled";
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
-        document
-          .getElementById("catFormName")
-          .addEventListener("input", function () {
-            if (!editCatId) {
-              document.getElementById("catFormSlug").value = this.value
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, "")
-                .trim()
-                .replace(/\s+/g, "-");
-            }
-          });
+        document.getElementById("catFormName").addEventListener("input", function () {
+          document.getElementById("catFormSlug").value = generateSlug(this.value);
+        });
         loadCats();
       });
 
       async function saveCategory() {
         const name = document.getElementById("catFormName").value.trim();
-        const slug = document.getElementById("catFormSlug").value.trim();
-        if (!name || !slug) {
-          Utils.toast("Vui lòng điền đầy đủ!", "error");
+        const slug = generateSlug(name);
+        const description = document.getElementById("catFormDesc").value.trim();
+        if (!name) {
+          Utils.toast("Vui lòng nhập tên danh mục!", "error");
           return;
         }
 
@@ -325,7 +312,7 @@
         btn.disabled = true;
         btn.textContent = "⏳...";
 
-        const data = { name, slug };
+        const data = { name, slug, description };
         if (editCatId) {
           await API.updateCategory(editCatId, data);
           const idx = allCats.findIndex((c) => c.id === editCatId);

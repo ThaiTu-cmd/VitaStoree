@@ -37,13 +37,7 @@
           <a class="nav-item" th:href="@{/admin/user/list}"
             ><span class="nav-icon">👥</span> Users</a
           >
-          <div class="nav-section-label">Marketing</div>
-          <a class="nav-item" th:href="@{/admin/marketing/discount}"
-            ><span class="nav-icon">🏷</span> Discounts</a
-          >
-          <a class="nav-item" th:href="@{/admin/reviews/review}"
-            ><span class="nav-icon">⭐</span> Reviews</a
-          >
+
         </nav>
         <div class="sidebar-bottom">
           <div class="admin-profile">
@@ -174,24 +168,13 @@
                   </div>
                 </div>
 
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label class="form-label">Shipping Method ID</label>
-                    <input
-                      class="form-control"
-                      type="number"
-                      id="editShipMethod"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Discount Code ID</label>
-                    <input
-                      class="form-control"
-                      type="text"
-                      id="editDiscountId"
-                      placeholder="Để trống nếu không có"
-                    />
-                  </div>
+                <div class="form-group">
+                  <label class="form-label">Shipping Method ID</label>
+                  <input
+                    class="form-control"
+                    type="number"
+                    id="editShipMethod"
+                  />
                 </div>
 
                 <button
@@ -239,10 +222,7 @@
           ["Shipping Addr. ID", String(d.shipping_address_id)],
           ["Payment Method ID", String(d.payment_method_id)],
           ["Shipping Method ID", String(d.shipping_method_id)],
-          [
-            "Discount Code ID",
-            d.discount_code_id ? String(d.discount_code_id) : "— (không có)",
-          ],
+
           ["Subtotal", Utils.formatCurrency(d.subtotal)],
           ["Total Amount", Utils.formatCurrency(d.total_amount)],
           ["Status", d.status],
@@ -268,8 +248,7 @@
           d.shipping_address_id;
         document.getElementById("editPayMethod").value = d.payment_method_id;
         document.getElementById("editShipMethod").value = d.shipping_method_id;
-        document.getElementById("editDiscountId").value =
-          d.discount_code_id ?? "";
+
       }
 
       async function saveOrder() {
@@ -284,8 +263,7 @@
             +document.getElementById("editShippingAddr").value,
           payment_method_id: +document.getElementById("editPayMethod").value,
           shipping_method_id: +document.getElementById("editShipMethod").value,
-          discount_code_id:
-            document.getElementById("editDiscountId").value || null,
+
         };
         await API.updateOrder(currentOrderId, data);
         Utils.toast("Đã cập nhật đơn hàng thành công!");

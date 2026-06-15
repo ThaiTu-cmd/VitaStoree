@@ -9,13 +9,13 @@
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" th:href="@{/css/variables.css}" />
-    <link rel="stylesheet" th:href="@{/css/main.css}" />
-    <link rel="stylesheet" th:href="@{/css/components.css}" />
-    <link rel="stylesheet" th:href="@{/css/pages.css}" />
+    <link rel="stylesheet" th:href="@{/client/css/variables.css}" />
+    <link rel="stylesheet" th:href="@{/client/css/main.css}" />
+    <link rel="stylesheet" th:href="@{/client/css/components.css}" />
+    <link rel="stylesheet" th:href="@{/client/css/pages.css}" />
   </head>
   <body>
-    <div th:replace="~{fragments/header :: header}"></div>
+    <div th:replace="~{client/fragments/header :: header}"></div>
 
     <main>
       <div class="container" style="padding-top: 28px; padding-bottom: 64px">
@@ -122,30 +122,18 @@
                 type="text"
                 placeholder="Nhập mã giảm giá..."
               />
-              <button class="btn btn-outline btn-sm">Áp dụng</button>
+              <button class="btn btn-primary btn-sm">Áp dụng</button>
             </div>
 
             <div class="summary-row total">
               <span>Tổng cộng</span>
-              <span id="summary-total" style="color: var(--color-green)"
+              <span id="summary-total" style="color: var(--color-on-dark)"
                 >0đ</span
               >
             </div>
 
-            <!-- Shipping notice -->
-            <p
-              style="
-                font-size: 0.75rem;
-                color: var(--color-grey-500);
-                margin: 8px 0 16px;
-                text-align: center;
-              "
-            >
-              🚚 Miễn phí vận chuyển cho đơn hàng từ 500.000đ
-            </p>
-
             <a
-              href="/checkout"
+              th:href="@{/checkout}"
               class="btn btn-primary btn-full btn-lg"
               data-checkout
               style="text-decoration: none; display: flex"
@@ -165,71 +153,7 @@
               </svg>
             </a>
 
-            <!-- Payment icons -->
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                margin-top: 16px;
-                flex-wrap: wrap;
-              "
-            >
-              <span style="font-size: 0.7rem; color: var(--color-grey-400)"
-                >Thanh toán an toàn với:</span
-              >
-            </div>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                margin-top: 6px;
-              "
-            >
-              <span
-                style="
-                  font-size: 0.7rem;
-                  padding: 3px 8px;
-                  border: 1px solid var(--color-border);
-                  border-radius: 4px;
-                  color: var(--color-grey-600);
-                "
-                >Tiền mặt</span
-              >
-              <span
-                style="
-                  font-size: 0.7rem;
-                  padding: 3px 8px;
-                  border: 1px solid var(--color-border);
-                  border-radius: 4px;
-                  color: var(--color-grey-600);
-                "
-                >Chuyển khoản</span
-              >
-              <span
-                style="
-                  font-size: 0.7rem;
-                  padding: 3px 8px;
-                  border: 1px solid var(--color-border);
-                  border-radius: 4px;
-                  color: var(--color-grey-600);
-                "
-                >MoMo</span
-              >
-              <span
-                style="
-                  font-size: 0.7rem;
-                  padding: 3px 8px;
-                  border: 1px solid var(--color-border);
-                  border-radius: 4px;
-                  color: var(--color-grey-600);
-                "
-                >ZaloPay</span
-              >
-            </div>
+
           </div>
         </div>
 
@@ -268,10 +192,10 @@
       </div>
     </main>
 
-    <div th:replace="~{fragments/footer :: footer}"></div>
-    <div th:replace="~{fragments/contact :: contact}"></div>
+    <div th:replace="~{client/fragments/footer :: footer}"></div>
+    <div th:replace="~{client/fragments/contact :: contact}"></div>
 
-    <script th:src="@{/js/app.js}"></script>
-    <script th:src="@{/js/cart.js}"></script>
+    <script th:src="@{/client/js/app.js}"></script>
+    <script th:src="@{/client/js/cart.js}"></script>
   </body>
 </html>

@@ -23,8 +23,6 @@ const MOCK = {
   users: [],
   products: [],
   categories: [],
-  reviews: [],
-  discounts: [],
 };
 
 /* ───────────────────────────────────────────────────────────────
@@ -49,7 +47,6 @@ const API = {
         shipping_address_id: 10,
         payment_method_id: 2,
         shipping_method_id: 1,
-        discount_code_id: null,
         subtotal: 800000,
         total_amount: 850000,
       }
@@ -147,40 +144,13 @@ const API = {
     return true;
   },
 
-  // ── REVIEWS ─────────────────────────────────────────────────
-  async getReviews() {
-    return MOCK.reviews;
-  },
-  async deleteReview(id) {
-    console.log("DELETE REVIEW", id);
-    return true;
-  },
-
-  // ── DISCOUNTS ────────────────────────────────────────────────
-  async getDiscounts() {
-    return MOCK.discounts;
-  },
-  async createDiscount(d) {
-    console.log("CREATE DISC", d);
-    return { id: Date.now(), ...d };
-  },
-  async updateDiscount(id, d) {
-    console.log("UPDATE DISC", id, d);
-    return true;
-  },
-  async deleteDiscount(id) {
-    console.log("DELETE DISC", id);
-    return true;
-  },
-
   // ── DASHBOARD STATS ──────────────────────────────────────────
   // Replace with: await (await fetch(`${DB_CONFIG.apiBase}/dashboard/stats`,{headers:this._h()})).json()
   async getDashboardStats() {
-    const [orders, users, products, discounts] = await Promise.all([
+    const [orders, users, products] = await Promise.all([
       this.getOrders(),
       this.getUsers(),
       this.getProducts(),
-      this.getDiscounts(),
     ]);
     return {
       totalRevenue: orders
@@ -193,11 +163,7 @@ const API = {
       totalUsers: users.filter(
         (u) => String(u.role || "").toUpperCase() === "CUSTOMER",
       ).length,
-      activeDiscounts: discounts.filter((d) => d.is_valid).length,
       recentOrders: orders.slice(0, 5),
-      topProducts: [...products]
-        .sort((a, b) => b.rating_avg - a.rating_avg)
-        .slice(0, 4),
     };
   },
 };

@@ -36,14 +36,7 @@
           <a class="nav-item" th:href="@{/admin/user/list}"
             ><span class="nav-icon">👥</span> Users</a
           >
-          <div class="nav-section-label">Marketing</div>
-          <a class="nav-item" th:href="@{/admin/marketing/discount}"
-            ><span class="nav-icon">🏷</span> Discounts</a
-          >
-          <div class="nav-section-label">Reviews</div>
-          <a class="nav-item" th:href="@{/admin/reviews/review}"
-            ><span class="nav-icon">⭐</span> Reviews</a
-          >
+
         </nav>
         <div class="sidebar-bottom">
           <div class="admin-profile">
@@ -155,6 +148,23 @@
                     placeholder="Mô tả sản phẩm, thành phần, công dụng..."
                   ></textarea>
                 </div>
+
+                <div class="form-group">
+                  <label class="form-label">Image URL</label>
+                  <input
+                    class="form-control"
+                    id="fImageUrl"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Trạng thái</label>
+                  <select class="form-control" id="fStatus">
+                    <option value="ACTIVE">● Active</option>
+                    <option value="INACTIVE">● Inactive</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -264,6 +274,8 @@
             document.getElementById("fCategory").value = p.category_id;
             document.getElementById("fPrice").value = p.price;
             document.getElementById("fStock").value = p.stock_quantity;
+            document.getElementById("fImageUrl").value = p.image_url || "";
+            document.getElementById("fStatus").value = p.status || "ACTIVE";
             document.getElementById("showRating").innerHTML = Utils.stars(
               p.rating_avg,
             );
@@ -284,6 +296,8 @@
           category_id: +document.getElementById("fCategory").value,
           price: +document.getElementById("fPrice").value,
           stock_quantity: +document.getElementById("fStock").value,
+          image_url: document.getElementById("fImageUrl").value.trim(),
+          status: document.getElementById("fStatus").value,
         };
 
         if (!data.name || !data.category_id || !data.price) {
@@ -301,6 +315,8 @@
           document.getElementById("fName").value = "";
           document.getElementById("fPrice").value = "";
           document.getElementById("fStock").value = "";
+          document.getElementById("fImageUrl").value = "";
+          document.getElementById("fStatus").value = "ACTIVE";
         }
         btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
       }
