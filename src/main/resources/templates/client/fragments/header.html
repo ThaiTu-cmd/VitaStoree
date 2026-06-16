@@ -66,7 +66,7 @@
             </a>
 
             <!-- Auth -->
-            <div th:if="${session.user == null}" class="d-flex gap-2">
+            <div th:if="${#authentication.principal == 'anonymousUser'}" class="d-flex gap-2">
               <a th:href="@{/auth/login}" class="btn btn-ghost btn-sm"
                 >Đăng nhập</a
               >
@@ -77,13 +77,13 @@
               >
             </div>
             <div
-              th:if="${session.user != null}"
+              th:if="${#authentication.principal != 'anonymousUser'}"
               class="user-dropdown"
             >
               <div class="user-dropdown-trigger">
                 <span class="user-greeting"
                   >Xin chào,
-                  <strong th:text="${session.user.name}">User</strong></span
+                  <strong th:text="${#authentication.principal.fullName}">User</strong></span
                 >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M6 9l6 6 6-6" />
@@ -151,7 +151,7 @@
           <a th:href="@{/shop}" class="nav-link">Tất cả sản phẩm</a>
           <a th:href="@{/about}" class="nav-link">Giới thiệu</a>
           <a th:href="@{/contact}" class="nav-link">Liên hệ</a>
-          <div th:if="${session.user != null}" style="border-top:1px solid var(--color-border);margin:8px 0;padding-top:8px">
+          <div th:if="${#authentication.principal != 'anonymousUser'}" style="border-top:1px solid var(--color-border);margin:8px 0;padding-top:8px">
             <a th:href="@{/userprofile}" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Thông tin chung</a>
             <a th:href="@{/orders}" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Quản lý đơn hàng</a>
             <a th:href="@{/address}" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Địa chỉ nhận hàng</a>

@@ -1,0 +1,660 @@
+===================================================================
+  HƯỚNG DẪN CRUD USER  (giữ nguyên)
+  → Nội dung user guide ở dưới
+===================================================================
+
+...
+...
+
+
+===================================================================
+  HƯỚNG DẪN CRUD CATEGORY QUA ADMIN
+===================================================================
+
+1. HIỆN TRẠNG
+   ✅ Đã có:
+      - CategoriesEntity (categoryId, categoryName, description, deletedAt, products)
+      - CategoriesRepository (extends JpaRepository)
+      - Frontend view template: admin/product/category.html
+      - AdminController có GET /admin/product/category → render view
+   ❌ Thiếu:
+      - DTO request/response cho category
+      - CategoryService interface + implementation
+      - REST controller (hiện đang dùng mock trong admin.js)
+      - API.getCategories()/createCategory()/updateCategory()/deleteCategory()
+        đang return mock, cần sửa thành fetch() thật
+
+2. NGUYÊN TẮC (giống user)
+   - Backend entity: categoryId (int), categoryName, description, deletedAt
+   - Frontend gửi/nhận: id, name, description, products (số lượng sp)
+   - Soft delete: set deletedAt, không xoá cứng
+   - API prefix: /admin/category/*
+
+
+===================================================================
+BƯỚC 1: Tạo DTO request + response
+===================================================================
+
+--- 1a. AdminCategoryResponse.java (DTO trả về) ---
+Tạo file: dto/response/AdminCategoryResponse.java
+
+  public class AdminCategoryResponse {
+      private int id;
+      private String name;
+      private String description;
+      private int products;
+      private String deletedAt;
+
+      // Constructor, getter, setter
+  }
+
+Giải thích:
+  - id = categoryId
+  - name = categoryName
+  - products = số lượng sản phẩm thuộc danh mục này (size của products list)
+  - deletedAt = null nếu chưa xoá, string datetime nếu đã xoá
+
+--- 1b. AdminCategoryRequest.java (DTO nhận từ frontend) ---
+Tạo file: dto/request/AdminCategoryRequest.java
+
+  public class AdminCategoryRequest {
+      private String name;
+      private String description;
+      // getter, setter
+  }
+
+Giải thích: Frontend gửi lên chỉ có name và description.
+  (id lấy từ path variable, products là computed, deletedAt là server-side)
+
+
+===================================================================
+BƯỚC 2: Tạo CategoryService interface
+===================================================================
+File mới: service/CategoryService.java
+
+  public interface CategoryService {
+      List<AdminCategoryResponse> getAllCategories();
+      AdminCategoryResponse getCategoryById(int id);
+      AdminCategoryResponse createCategory(AdminCategoryRequest request);
+      AdminCategoryResponse updateCategory(int id, AdminCategoryRequest request);
+      void deleteCategory(int id);
+      AdminCategoryResponse restoreCategory(int id);
+  }
+
+
+===================================================================
+BƯỚC 3: Tạo CategoryServiceImpl
+===================================================================
+File mới: service/impl/CategoryServiceImpl.java
+
+  @Service
+  public class CategoryServiceImpl implements CategoryService {
+
+      @Autowired private CategoriesRepository categoryRepository;
+
+      @Override
+      public List<AdminCategoryResponse> getAllCategories() {
+          return categoryRepository.findAll().stream()
+                  .map(this::toResponse)
+                  .toList();
+      }
+
+      @Override
+      public AdminCategoryResponse getCategoryById(int id) {
+          CategoriesEntity cat = categoryRepository.findById((long) id)
+                  .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
+          return toResponse(cat);
+      }
+
+      @Override
+      public AdminCategoryResponse createCategory(AdminCategoryRequest request) {
+          CategoriesEntity cat = new CategoriesEntity();
+          cat.setCategoryName(request.getName());
+          cat.setDescription(request.getDescription());
+          cat.setDeletedAt(null);
+          return toResponse(categoryRepository.save(cat));
+      }
+
+      @Override
+      public AdminCategoryResponse updateCategory(int id, AdminCategoryRequest request) {
+          CategoriesEntity cat = categoryRepository.findById((long) id)
+                  .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
+          cat.setCategoryName(request.getName());
+          cat.setDescription(request.getDescription());
+          return toResponse(categoryRepository.save(cat));
+      }
+
+      @Override
+      public void deleteCategory(int id) {
+          CategoriesEntity cat = categoryRepository.findById((long) id)
+                  .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
+          cat.setDeletedAt(LocalDateTime.now());
+          categoryRepository.save(cat);
+      }
+
+      @Override
+      public AdminCategoryResponse restoreCategory(int id) {
+          CategoriesEntity cat = categoryRepository.findById((long) id)
+                  .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
+          cat.setDeletedAt(null);
+          return toResponse(categoryRepository.save(cat));
+      }
+
+      private AdminCategoryResponse toResponse(CategoriesEntity cat) {
+          return new AdminCategoryResponse(
+                  cat.getCategoryId(),
+                  cat.getCategoryName(),
+                  cat.getDescription(),
+                  cat.getProducts() != null ? cat.getProducts().size() : 0,
+                  cat.getDeletedAt() != null ? cat.getDeletedAt().toString() : null
+          );
+      }
+  }
+
+Lưu ý:
+  - products count: cat.getProducts().size() — Hibernate lazy load,
+    nhưng vì trong cùng transaction nên vẫn load được.
+    Nếu không load được thì đánh @Transactional(readOnly = true) ở method.
+  - deletedAt: để null string nếu chưa xoá, để datetime string nếu đã xoá
+
+
+===================================================================
+BƯỚC 4: Thêm REST API vào AdminController
+===================================================================
+File: controller/admin/AdminController.java
+
+Thêm các endpoint sau vào class AdminController:
+
+  @GetMapping("/category/all")
+  public ResponseEntity<List<AdminCategoryResponse>> getAllCategories() {
+      return ResponseEntity.ok(categoryService.getAllCategories());
+  }
+
+  @GetMapping("/category/{id}")
+  public ResponseEntity<?> getCategory(@PathVariable int id) { ... }
+
+  @PostMapping("/category/add")
+  public ResponseEntity<?> createCategory(@RequestBody AdminCategoryRequest req) {
+      try {
+          AdminCategoryResponse created = categoryService.createCategory(req);
+          return ResponseEntity.status(HttpStatus.CREATED).body(created);
+      } catch (Exception e) {
+          return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+      }
+  }
+
+  @PutMapping("/category/{id}")
+  public ResponseEntity<?> updateCategory(@PathVariable int id,
+                                           @RequestBody AdminCategoryRequest req) { ... }
+
+  @DeleteMapping("/category/{id}")
+  public ResponseEntity<?> deleteCategory(@PathVariable int id) { ... }
+
+  @PostMapping("/category/{id}/restore")
+  public ResponseEntity<?> restoreCategory(@PathVariable int id) { ... }
+
+Đừng quên:
+  - @Autowired CategoryService categoryService; ở đầu class
+  - Import các class cần thiết
+
+
+===================================================================
+BƯỚC 5: Sửa admin.js — đổi mock → fetch thật
+===================================================================
+File: static/admin/js/admin.js
+
+Sửa 4 method trong API object:
+
+  // ── CATEGORIES ──────────────────────────────────────────────
+  async getCategories() {
+      const res = await fetch(`${DB_CONFIG.apiBase}/category/all`, {
+          headers: this._h()
+      });
+      if (!res.ok) throw new Error("Không thể tải danh mục");
+      return res.json();
+  },
+
+  async createCategory(d) {
+      const res = await fetch(`${DB_CONFIG.apiBase}/category/add`, {
+          method: "POST",
+          headers: this._h(),
+          body: JSON.stringify(d)
+      });
+      if (!res.ok) throw new Error("Không thể tạo danh mục");
+      return res.json();
+  },
+
+  async updateCategory(id, d) {
+      const res = await fetch(`${DB_CONFIG.apiBase}/category/${id}`, {
+          method: "PUT",
+          headers: this._h(),
+          body: JSON.stringify(d)
+      });
+      if (!res.ok) throw new Error("Không thể cập nhật danh mục");
+      return res.json();
+  },
+
+  async deleteCategory(id) {
+      const res = await fetch(`${DB_CONFIG.apiBase}/category/${id}`, {
+          method: "DELETE",
+          headers: this._h()
+      });
+      if (!res.ok) throw new Error("Không thể xóa danh mục");
+      return res.json();
+  },
+
+
+===================================================================
+BƯỚC 6: Sửa category.html — cập nhật JS cho đúng response
+===================================================================
+File: templates/admin/product/category.html
+
+Frontend category.html hiện tại dùng các field:
+  - c.id       ← API trả về id (khớp)
+  - c.name     ← API trả về name (khớp)
+  - c.description ← API trả về description (khớp)
+  - c.products ← API trả về products (số int, khớp)
+
+→ KHÔNG cần sửa HTML, chỉ sửa saveCategory().
+
+Vấn đề: saveCategory() hiện tại gửi:
+    const data = { name, slug, description };
+  Nhưng backend DTO AdminCategoryRequest chỉ có name và description
+  (không có slug). → Sửa lại:
+
+    const data = { name, description };
+
+  Và khi create thành công, frontend push vào mảng local với id từ response.
+  Hiện tại đang dùng mock: { ...created, products: 0 }
+  → Sửa thành push response trực tiếp.
+
+
+===================================================================
+BƯỚC 7: Danh sách file cần tạo / sửa
+===================================================================
+
+STT  File                                    Hành động
+───  ──────────────────────────────────────  ─────────
+1    dto/response/AdminCategoryResponse.java  TẠO MỚI
+2    dto/request/AdminCategoryRequest.java    TẠO MỚI
+3    service/CategoryService.java             TẠO MỚI
+4    service/impl/CategoryServiceImpl.java    TẠO MỚI
+5    controller/admin/AdminController.java    SỬA (thêm endpoint)
+6    static/admin/js/admin.js                 SỬA (thay mock = fetch)
+7    templates/admin/product/category.html    SỬA (data.slug, xoá products:0)
+
+
+===================================================================
+KIỂM TRA
+===================================================================
+
+1. mvn compile → BUILD SUCCESS
+2. Vào /admin/product/category
+3. Test thêm, sửa, xoá, phục hồi danh mục
+
+1. NGUYÊN TẮC
+   - Backend enum: Role = USER, ADMIN  |  Status = ACTIVE, BLOCKED
+   - Frontend gửi/nhận ĐÚNG tên enum, không cần map, không custom code
+   - Chỉ sửa option value trong HTML dropdown cho khớp
+
+
+===================================================================
+BƯỚC 1: BACKEND — kiểm tra các file đã đúng chưa
+===================================================================
+
+File: src\main\java\com\doan\VitaStore\enums\Role.java
+
+  public enum Role { USER, ADMIN }
+
+File: src\main\java\com\doan\VitaStore\enums\Status.java
+
+  public enum Status { ACTIVE, BLOCKED }
+
+File: src\main\java\com\doan\VitaStore\dto\response\AdminUserResponse.java
+
+  public class AdminUserResponse {
+      private int id;
+      private String fullName;
+      private String email;
+      private String phone;
+      private String role;    // "USER" hoặc "ADMIN"
+      private String status;  // "ACTIVE" hoặc "BLOCKED"
+      // getter/setter...
+  }
+
+File: src\main\java\com\doan\VitaStore\dto\request\AdminUserCreationRequest.java
+
+  public class AdminUserCreationRequest {
+      private String fullName;
+      private String email;
+      private String phone;
+      private Role role;       // enum — Jackson tự deserialize "USER"/"ADMIN"
+      private Status status;   // enum — Jackson tự deserialize "ACTIVE"/"BLOCKED"
+      private String passwordHash;
+      // getter/setter...
+  }
+
+File: src\main\java\com\doan\VitaStore\dto\request\AdminUserUpdateRequest.java
+
+  → Giống hệt AdminUserCreationRequest (fullName, email, phone, role, status, passwordHash)
+
+File: src\main\java\com\doan\VitaStore\exception\UserNotFoundException.java
+
+  public class UserNotFoundException extends RuntimeException {
+      public UserNotFoundException(String message) { super(message); }
+      public UserNotFoundException(int id) { super("Không tìm thấy user với ID: " + id); }
+  }
+
+
+===================================================================
+BƯỚC 2: UserService.java (interface)
+===================================================================
+File: src\main\java\com\doan\VitaStore\service\UserService.java
+
+package com.doan.VitaStore.service;
+
+import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
+import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
+import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.entity.UserEntity;
+
+import java.util.List;
+
+public interface UserService {
+    UserEntity registerUser(String fullName, String email, String phone, String password);
+    UserEntity getUserByEmail(String email);
+    boolean existsByEmail(String email);
+
+    List<AdminUserResponse> getAllUsers();
+    AdminUserResponse getUserByIdResponse(int id);
+    AdminUserResponse createUserByAdmin(AdminUserCreationRequest request);
+    AdminUserResponse updateUserByAdmin(int id, AdminUserUpdateRequest request);
+    void deleteUserById(int id);
+}
+
+
+===================================================================
+BƯỚC 3: UserServiceImpl.java (implementation)
+===================================================================
+File: src\main\java\com\doan\VitaStore\service\impl\UserServiceImpl.java
+
+package com.doan.VitaStore.service.impl;
+
+import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
+import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
+import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.entity.UserEntity;
+import com.doan.VitaStore.enums.Role;
+import com.doan.VitaStore.enums.Status;
+import com.doan.VitaStore.exception.UserNotFoundException;
+import com.doan.VitaStore.repository.UserRepository;
+import com.doan.VitaStore.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    public UserEntity registerUser(String fullName, String email, String phone, String password) {
+        UserEntity user = new UserEntity();
+        user.setFullName(fullName);
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPasswordHash(passwordEncoder.encode(password));
+        user.setRole(Role.USER);
+        user.setStatus(Status.ACTIVE);
+        user.setCreatedAt(LocalDateTime.now());
+        user.setDeletedAt(null);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public UserEntity getUserByEmail(String email) {
+        return userRepository.findByEmailOrPhone(email, email).orElse(null);
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return userRepository.findByEmailOrPhone(email, email).isPresent();
+    }
+
+    @Override
+    public List<AdminUserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getDeletedAt() == null)
+                .map(this::toAdminUserResponse)
+                .toList();
+    }
+
+    @Override
+    public AdminUserResponse getUserByIdResponse(int id) {
+        UserEntity user = userRepository.findById((long) id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        return toAdminUserResponse(user);
+    }
+
+    @Override
+    public AdminUserResponse createUserByAdmin(AdminUserCreationRequest request) {
+        if (existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email này đã được sử dụng");
+        }
+        UserEntity user = new UserEntity();
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+        user.setRole(request.getRole());       // dùng trực tiếp enum
+        user.setStatus(request.getStatus());   // dùng trực tiếp enum
+        user.setCreatedAt(LocalDateTime.now());
+        user.setDeletedAt(null);
+        return toAdminUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    public AdminUserResponse updateUserByAdmin(int id, AdminUserUpdateRequest request) {
+        UserEntity user = userRepository.findById((long) id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setRole(request.getRole());
+        user.setStatus(request.getStatus());
+        if (request.getPasswordHash() != null && !request.getPasswordHash().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(request.getPasswordHash()));
+        }
+        return toAdminUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    public void deleteUserById(int id) {
+        UserEntity user = userRepository.findById((long) id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        user.setDeletedAt(LocalDateTime.now());
+        user.setStatus(Status.BLOCKED);
+        userRepository.save(user);
+    }
+
+    // Chuyển entity → response — dùng .name() lấy đúng tên enum
+    private AdminUserResponse toAdminUserResponse(UserEntity user) {
+        return new AdminUserResponse(
+                user.getUserId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getRole().name(),    // "USER" hoặc "ADMIN"
+                user.getStatus().name()   // "ACTIVE" hoặc "BLOCKED"
+        );
+    }
+}
+
+
+===================================================================
+BƯỚC 4: AdminController.java (gộp view + REST API)
+===================================================================
+File: src\main\java\com\doan\VitaStore\controller\admin\AdminController.java
+
+package com.doan.VitaStore.controller.admin;
+
+import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
+import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
+import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.exception.UserNotFoundException;
+import com.doan.VitaStore.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@Controller
+@RequestMapping("/admin")
+public class AdminController {
+
+    @Autowired
+    private UserService userService;
+
+    // ── View endpoints ──────────────────────────────────────
+    @GetMapping({"", "/index"})
+    public String dashboard() { return "admin/index"; }
+
+    @GetMapping("/login")
+    public String loginPage() { return "admin/Admin_logon"; }
+
+    @GetMapping("/user/list")
+    public String userList() { return "admin/user/list"; }
+
+    @GetMapping("/product/list")
+    public String productList() { return "admin/product/list"; }
+
+    @GetMapping("/product/category")
+    public String categoryList() { return "admin/product/category"; }
+
+    @GetMapping("/product/add")
+    public String productAdd() { return "admin/product/add"; }
+
+    @GetMapping("/order/list")
+    public String orderList() { return "admin/order/list"; }
+
+    @GetMapping("/order/detail")
+    public String orderDetail() { return "admin/order/detail"; }
+
+    // ── REST API — User CRUD ────────────────────────────────
+    @GetMapping("/user/all")
+    public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PostMapping("/user/add")
+    public ResponseEntity<?> createUser(@RequestBody AdminUserCreationRequest request) {
+        try {
+            AdminUserResponse created = userService.createUserByAdmin(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/user/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable int id,
+                                        @RequestBody AdminUserUpdateRequest request) {
+        try {
+            AdminUserResponse updated = userService.updateUserByAdmin(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/user/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable int id) {
+        try {
+            userService.deleteUserById(id);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+}
+
+
+===================================================================
+BƯỚC 5: SỬA FRONTEND — đổi giá trị dropdown cho khớp enum
+===================================================================
+
+File: src\main\resources\templates\admin\user\list.html
+
+--- 5a. Role filter (dòng 144-145) ---
+
+  <option value="">Tất cả vai trò</option>
+  <option value="ADMIN">Admin</option>
+  <option value="USER">User</option>          ← sửa CUSTOMER → USER
+
+--- 5b. Status filter (dòng 153-154) ---
+
+  <option value="">Tất cả trạng thái</option>
+  <option value="ACTIVE">Active</option>
+  <option value="BLOCKED">Inactive</option>   ← sửa INACTIVE → BLOCKED
+
+--- 5c. Modal — Role dropdown (dòng 231) ---
+
+  <select class="form-control" id="uRole">
+    <option value="USER">👤 User</option>     ← sửa CUSTOMER → USER
+    <option value="ADMIN">👑 Admin</option>
+  </select>
+
+--- 5d. Modal — Status dropdown (dòng 238-240) ---
+
+  <select class="form-control" id="uStatus">
+    <option value="ACTIVE">● Active</option>
+    <option value="BLOCKED">● Inactive</option>  ← sửa INACTIVE → BLOCKED
+  </select>
+
+--- 5e. JS filter — đổi giá trị so sánh (dòng 306-316) ---
+
+  document.getElementById("countUsers").textContent = allUsers.filter(
+    (u) => u.role === "USER",              ← sửa "CUSTOMER" → "USER"
+  ).length;
+
+  document.getElementById("countInactive"… — nếu có, sửa "INACTIVE" → "BLOCKED"
+
+
+===================================================================
+BƯỚC 6: CHẠY VÀ KIỂM TRA
+===================================================================
+
+1. mvn spring-boot:run
+2. Vào http://localhost:8080/VitaStore/admin/login
+3. Đăng nhập: admin@vitastore.com / Admin@123
+4. Vào menu Users (/admin/user/list)
+5. Test:
+   - Danh sách hiển thị
+   - Thêm user mới (chọn role USER, status ACTIVE)
+   - Sửa user
+   - Xoá user (soft delete)
+
+
+===================================================================
+KHÔNG CÓ CODE CUSTOM TRONG ENUM / SERVICE
+===================================================================
+
+- Role.java: chỉ USER, ADMIN
+- Status.java: chỉ ACTIVE, BLOCKED
+- Request DTO: dùng enum trực tiếp
+- Service: dùng .name() và setRole/setStatus trực tiếp
+- Frontend: gửi giá trị khớp enum → Jackson tự deserialize

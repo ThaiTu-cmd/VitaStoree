@@ -124,7 +124,7 @@
 
         <!-- Error message -->
         <div
-          th:if="${error}"
+          th:if="${param.error}"
           class="auth-alert"
         >
           <svg
@@ -144,7 +144,7 @@
 
         <!-- Success message -->
         <div
-          th:if="${success}"
+          th:if="${param.success}"
           class="auth-alert auth-alert-success"
         >
           <svg

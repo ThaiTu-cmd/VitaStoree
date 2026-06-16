@@ -128,12 +128,7 @@
               <div class="toolbar">
                 <div class="search-box">
                   <span class="search-icon">🔍</span>
-                  <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Tìm tên, email, số điện thoại..."
-                    oninput="filterUsers()"
-                  />
+                  <input type="text" id="searchInput" placeholder="Tìm tên, email, số điện thoại..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" oninput="filterUsers()" />
                 </div>
                 <select
                   class="select-filter"
@@ -141,8 +136,8 @@
                   onchange="filterUsers()"
                 >
                   <option value="">Tất cả vai trò</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="CUSTOMER">User</option>
+                   <option value="ADMIN">Admin</option>
+                   <option value="USER">User</option>
                 </select>
                 <select
                   class="select-filter"
@@ -150,8 +145,8 @@
                   onchange="filterUsers()"
                 >
                   <option value="">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
+                   <option value="ACTIVE">Active</option>
+                   <option value="BLOCKED">Inactive</option>
                 </select>
               </div>
               <span class="badge badge-info" id="userCount">—</span>
@@ -167,13 +162,14 @@
                     <th>Phone</th>
                     <th>Role</th>
                     <th>Status</th>
+                    <th>DeletedAt</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="usersBody">
                   <tr>
                     <td
-                      colspan="7"
+                      colspan="8"
                       style="
                         text-align: center;
                         padding: 40px;
@@ -187,12 +183,7 @@
               </table>
             </div>
 
-            <div class="pagination">
-              <button class="page-btn">‹</button>
-              <button class="page-btn active">1</button>
-              <button class="page-btn">2</button>
-              <button class="page-btn">›</button>
-            </div>
+            <div class="pagination" id="pagination"></div>
           </div>
         </div>
       </div>
@@ -214,35 +205,35 @@
           <input type="hidden" id="uId" />
           <div class="form-group">
             <label class="form-label">Họ và tên *</label>
-            <input class="form-control" id="uName" required />
+            <input class="form-control" id="uName" placeholder="Nguyễn Văn A" required />
           </div>
           <div class="form-group">
             <label class="form-label">Email *</label>
-            <input class="form-control" id="uEmail" type="email" required />
+            <input class="form-control" id="uEmail" type="email" placeholder="nva@gmail.com" required />
           </div>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Số điện thoại</label>
-              <input class="form-control" id="uPhone" />
+              <input class="form-control" id="uPhone" placeholder="0901234567" />
             </div>
             <div class="form-group">
               <label class="form-label">Vai trò</label>
               <select class="form-control" id="uRole">
-                <option value="CUSTOMER">👤 User</option>
-                <option value="ADMIN">👑 Admin</option>
+                 <option value="USER">👤 User</option>
+                 <option value="ADMIN">👑 Admin</option>
               </select>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Trạng thái</label>
             <select class="form-control" id="uStatus">
-              <option value="ACTIVE">● Active</option>
-              <option value="INACTIVE">● Inactive</option>
+               <option value="ACTIVE">● Active</option>
+               <option value="BLOCKED">● Inactive</option>
             </select>
           </div>
           <div class="form-group" id="passwordField">
             <label class="form-label">Mật khẩu</label>
-            <input class="form-control" id="uPassword" type="password" />
+            <input class="form-control" id="uPassword" type="password" placeholder="********" />
           </div>
         </div>
         <div class="modal-footer">
@@ -298,13 +289,16 @@
     <script>
       let allUsers = [];
       let editUserId = null;
+      let currentPage = 1;
+      const PAGE_SIZE = 10;
+      let filteredUsers = [];
 
       async function loadUsers() {
         allUsers = await API.getUsers();
 
         document.getElementById("countAll").textContent = allUsers.length;
         document.getElementById("countUsers").textContent = allUsers.filter(
-          (u) => u.role === "CUSTOMER",
+           (u) => u.role === "USER",
         ).length;
         document.getElementById("countAdmins").textContent = allUsers.filter(
           (u) => u.role === "ADMIN",
@@ -313,14 +307,19 @@
           (u) => u.status === "ACTIVE",
         ).length;
 
+        currentPage = 1;
         filterUsers();
       }
 
-      function renderUsers(list) {
+      function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filteredUsers.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE) || 1;
+
         document.getElementById("userCount").textContent =
-          `${list.length} tài khoản`;
-        document.getElementById("usersBody").innerHTML = list.length
-          ? list
+          `${filteredUsers.length} tài khoản`;
+        document.getElementById("usersBody").innerHTML = filteredUsers.length
+          ? pageItems
               .map(
                 (u) => `
         <tr>
@@ -330,33 +329,54 @@
           <td class="td-mono">${u.phone || "—"}</td>
           <td>${Utils.roleBadge(u.role)}</td>
           <td>${Utils.userStatusBadge(u.status)}</td>
+          <td class="td-mono" style="color:var(--text-muted);font-size:12px">${u.deletedAt || "—"}</td>
           <td>
             <div class="action-group">
               <button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(u)})'>✏️ Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${u.id},'${u.fullName}')">🗑</button>
+              ${u.deletedAt
+                ? `<button class="btn btn-sm btn-success" onclick="restoreUser(${u.id},'${u.fullName}')">↩</button>`
+                : `<button class="btn btn-sm btn-danger" onclick="confirmDelete(${u.id},'${u.fullName}')">🗑</button>`}
             </div>
           </td>
         </tr>`,
               )
               .join("")
-          : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy</td></tr>`;
+          : `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy</td></tr>`;
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&#8249;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>&#8250;</button>`;
+        document.getElementById("pagination").innerHTML = html;
+      }
+
+      function goToPage(page) {
+        const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderPage();
       }
 
       function filterUsers() {
         const q = document.getElementById("searchInput").value.toLowerCase();
         const r = document.getElementById("roleFilter").value;
         const st = document.getElementById("statusFilter").value;
-        renderUsers(
-          allUsers.filter(
-            (u) =>
-              (!q ||
-                u.fullName.toLowerCase().includes(q) ||
-                u.email.toLowerCase().includes(q) ||
-                (u.phone || "").toLowerCase().includes(q)) &&
-              (!r || u.role === r) &&
-              (!st || u.status === st),
-          ),
+        filteredUsers = allUsers.filter(
+          (u) =>
+            (!q ||
+              u.fullName.toLowerCase().includes(q) ||
+              u.email.toLowerCase().includes(q) ||
+              (u.phone || "").toLowerCase().includes(q)) &&
+            (!r || u.role === r) &&
+            (!st || u.status === st),
         );
+        currentPage = 1;
+        renderPage();
       }
 
       function openAdd() {
@@ -366,7 +386,7 @@
         ["uId", "uName", "uEmail", "uPhone", "uPassword"].forEach(
           (id) => (document.getElementById(id).value = ""),
         );
-        document.getElementById("uRole").value = "CUSTOMER";
+        document.getElementById("uRole").value = "USER";
         document.getElementById("uStatus").value = "ACTIVE";
         Modal.open("userModalOverlay");
       }
@@ -441,6 +461,18 @@
             Utils.toast(error.message || "Có lỗi khi xóa người dùng", "error");
           }
         });
+      }
+
+      async function restoreUser(id, name) {
+        if (!confirm(`Phục hồi tài khoản "${name}"?`)) return;
+        try {
+          const res = await fetch(`${DB_CONFIG.apiBase}/user/${id}/restore`, { method: "POST", headers: API._h() });
+          if (!res.ok) throw new Error("Không thể phục hồi");
+          Utils.toast(`Đã phục hồi tài khoản "${name}"`);
+          await loadUsers();
+        } catch (error) {
+          Utils.toast(error.message || "Có lỗi khi phục hồi", "error");
+        }
       }
 
       document.addEventListener("DOMContentLoaded", loadUsers);
