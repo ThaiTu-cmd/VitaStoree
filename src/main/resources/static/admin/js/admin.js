@@ -106,42 +106,106 @@ const API = {
     }
     return true;
   },
+  async restoreUser(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/user/${id}/restore`, {
+      method: "POST",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể phục hồi tài khoản");
+    return res.json();
+  },
 
   // ── PRODUCTS ─────────────────────────────────────────────────
   async getProducts() {
-    return MOCK.products;
+    const res = await fetch(`${DB_CONFIG.apiBase}/product/all`, {
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể tải sản phẩm");
+    return res.json();
   },
   async getProductById(id) {
-    return MOCK.products.find((p) => p.id === id);
+    const res = await fetch(`${DB_CONFIG.apiBase}/product/${id}`, {
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể tải thông tin sản phẩm");
+    return res.json();
   },
   async createProduct(d) {
-    console.log("CREATE PRODUCT", d);
-    return { id: Date.now(), ...d };
+    const res = await fetch(`${DB_CONFIG.apiBase}/product/add`, {
+      method: "POST",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể tạo sản phẩm");
+    return res.json();
   },
   async updateProduct(id, d) {
-    console.log("UPDATE PRODUCT", id, d);
-    return true;
+    const res = await fetch(`${DB_CONFIG.apiBase}/product/${id}`, {
+      method: "PUT",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể cập nhật sản phẩm");
+    return res.json();
   },
   async deleteProduct(id) {
-    console.log("DELETE PRODUCT", id);
-    return true;
+    const res = await fetch(`${DB_CONFIG.apiBase}/product/${id}`, {
+      method: "DELETE",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể xóa sản phẩm");
+    return res.json();
+  },
+  async restoreProduct(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/product/${id}/restore`, {
+      method: "POST",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể phục hồi sản phẩm");
+    return res.json();
   },
 
   // ── CATEGORIES ──────────────────────────────────────────────
   async getCategories() {
-    return MOCK.categories;
+    const res = await fetch(`${DB_CONFIG.apiBase}/category/all`, {
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể tải danh mục");
+    return res.json();
   },
   async createCategory(d) {
-    console.log("CREATE CAT", d);
-    return { id: Date.now(), ...d };
+    const res = await fetch(`${DB_CONFIG.apiBase}/category/add`, {
+      method: "POST",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể tạo danh mục");
+    return res.json();
   },
   async updateCategory(id, d) {
-    console.log("UPDATE CAT", id, d);
-    return true;
+    const res = await fetch(`${DB_CONFIG.apiBase}/category/${id}`, {
+      method: "PUT",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể cập nhật danh mục");
+    return res.json();
   },
   async deleteCategory(id) {
-    console.log("DELETE CAT", id);
-    return true;
+    const res = await fetch(`${DB_CONFIG.apiBase}/category/${id}`, {
+      method: "DELETE",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể xóa danh mục");
+    return res.json();
+  },
+  async restoreCategory(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/category/${id}/restore`, {
+      method: "POST",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể phục hồi danh mục");
+    return res.json();
   },
 
   // ── DASHBOARD STATS ──────────────────────────────────────────
@@ -210,13 +274,6 @@ const Utils = {
       : `<span class="badge badge-danger">✗ Invalid</span>`;
   },
 
-  stars(avg) {
-    const f = Math.floor(avg);
-    const h = avg % 1 >= 0.5;
-    const s = "★".repeat(f) + (h ? "☆" : "") + "☆".repeat(5 - f - (h ? 1 : 0));
-    return `<span class="stars">${s}</span> <small style="color:var(--text-muted);font-size:11px">${avg}</small>`;
-  },
-
   toast(msg, type = "success") {
     let c = document.getElementById("toastContainer");
     if (!c) {
@@ -245,52 +302,44 @@ const Utils = {
 };
 
 /* ───────────────────────────────────────────────────────────────
-   DELETE CONFIRM — 10s countdown
+   CONFIRM MODAL  (dùng chung cho xóa & phục hồi)
 ─────────────────────────────────────────────────────────────── */
 const DeleteConfirm = {
-  _timer: null,
   _cb: null,
 
-  show(label, onConfirm) {
+  show(label, onConfirm, opts = {}) {
     this._cb = onConfirm;
     const overlay = document.getElementById("deleteModalOverlay");
+    if (!overlay) return;
+
+    const icon = overlay.querySelector(".confirm-icon");
+    const title = overlay.querySelector(".confirm-title");
+    const text = overlay.querySelector(".confirm-text");
     const btn = document.getElementById("confirmDeleteBtn");
-    const fill = document.getElementById("countdownFill");
-    const lbl = document.getElementById("countdownLabel");
     const target = document.getElementById("deleteTargetLabel");
 
-    if (!overlay) return;
+    const cfg = {
+      icon: "🗑️",
+      title: "Xác nhận xóa",
+      buttonText: "Xác nhận xóa",
+      buttonClass: "btn-danger",
+      confirmPrefix: "Bạn đang xóa",
+      confirmSuffix: "",
+      ...opts,
+    };
+
+    icon.textContent = cfg.icon;
+    title.textContent = cfg.title;
+    btn.textContent = cfg.buttonText;
+    btn.className = `btn ${cfg.buttonClass}`;
     target.textContent = label;
-    btn.disabled = true;
-
-    fill.style.transition = "none";
-    fill.style.width = "100%";
-    lbl.textContent = "Vui lòng chờ 10 giây...";
-
+    text.innerHTML =
+      `${cfg.confirmPrefix}<br /><strong id="deleteTargetLabel">${label}</strong>${cfg.confirmSuffix ? `<br />${cfg.confirmSuffix}` : ""}`;
+    btn.disabled = false;
     overlay.classList.add("open");
-
-    let count = 10;
-    setTimeout(() => {
-      fill.style.transition = `width ${count}s linear`;
-      fill.style.width = "0%";
-    }, 60);
-
-    clearInterval(this._timer);
-    this._timer = setInterval(() => {
-      count--;
-      lbl.textContent =
-        count > 0
-          ? `Vui lòng chờ ${count} giây...`
-          : "Bạn có thể xác nhận xóa bây giờ";
-      if (count <= 0) {
-        clearInterval(this._timer);
-        btn.disabled = false;
-      }
-    }, 1000);
   },
 
   hide() {
-    clearInterval(this._timer);
     const overlay = document.getElementById("deleteModalOverlay");
     if (overlay) overlay.classList.remove("open");
   },

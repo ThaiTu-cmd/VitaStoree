@@ -117,29 +117,29 @@
                   <option value="low">Sắp hết (&lt;50)</option>
                   <option value="ok">Còn hàng</option>
                 </select>
+
               </div>
               <span class="badge badge-info" id="productCount">—</span>
             </div>
 
             <div class="table-wrap">
               <table>
-                <thead>
+                  <thead>
                   <tr>
                     <th>ID</th>
-                    <th>Category ID</th>
+                    <th>Category</th>
                     <th>Name</th>
                     <th>Price</th>
-                    <th>Rating Avg</th>
-                    <th>Rating Count</th>
                     <th>Stock</th>
+                    <th>Deleted At</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="productsBody">
                   <tr>
                     <td
-                      colspan="8"
-                      style="
+                        colspan="7"
+                        style="
                         text-align: center;
                         padding: 40px;
                         color: var(--text-muted);
@@ -152,12 +152,7 @@
               </table>
             </div>
 
-            <div class="pagination">
-              <button class="page-btn">‹</button>
-              <button class="page-btn active">1</button>
-              <button class="page-btn">2</button>
-              <button class="page-btn">›</button>
-            </div>
+            <div class="pagination" id="pagination"></div>
           </div>
         </div>
       </div>
@@ -175,12 +170,6 @@
           <div class="confirm-text">
             Bạn đang xóa sản phẩm<br /><strong id="deleteTargetLabel"></strong
             ><br />Hành động này không thể hoàn tác!
-          </div>
-          <div class="countdown-bar">
-            <div class="countdown-fill" id="countdownFill"></div>
-          </div>
-          <div class="countdown-label" id="countdownLabel">
-            Vui lòng chờ 10 giây...
           </div>
         </div>
         <div class="modal-footer">
@@ -202,6 +191,9 @@
     <script th:src="@{/admin/js/admin.js}"></script>
     <script>
       let allProducts = [];
+      let currentPage = 1;
+      const PAGE_SIZE = 10;
+      let filteredProducts = [];
 
       async function loadProducts() {
         const [products, cats] = await Promise.all([
@@ -219,65 +211,113 @@
           catSel.appendChild(opt);
         });
 
-        renderProducts(allProducts);
+        currentPage = 1;
+        filterProducts();
       }
 
-      function renderProducts(list) {
+      function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filteredProducts.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE) || 1;
+
         document.getElementById("productCount").textContent =
-          `${list.length} sản phẩm`;
-        document.getElementById("productsBody").innerHTML = list.length
-          ? list
+          `${filteredProducts.length} sản phẩm`;
+        document.getElementById("productsBody").innerHTML = filteredProducts.length
+          ? pageItems
               .map(
                 (p) => `
-        <tr>
+        <tr${p.deletedAt ? ' style="opacity:0.5"' : ''}>
           <td class="td-mono">${p.id}</td>
-          <td class="td-mono">${p.category_id}</td>
+          <td class="td-mono">${p.categoryId}${p.categoryDeletedAt ? ' <span class="badge badge-danger" style="font-size:10px">đã xóa</span>' : ''}</td>
           <td><strong>${p.name}</strong></td>
           <td style="font-weight:700;color:var(--primary)">${Utils.formatCurrency(p.price)}</td>
-          <td>${Utils.stars(p.rating_avg)}</td>
-          <td class="td-mono">${p.rating_count}</td>
           <td>
             ${
-              p.stock_quantity < 50
-                ? `<span class="badge badge-warning">⚠ ${p.stock_quantity}</span>`
-                : `<span class="badge badge-success">${p.stock_quantity}</span>`
+              p.stockQuantity < 50
+                ? `<span class="badge badge-warning">⚠ ${p.stockQuantity}</span>`
+                : `<span class="badge badge-success">${p.stockQuantity}</span>`
             }
           </td>
+          <td class="td-mono" style="color:var(--text-muted);font-size:12px">${p.deletedAt || "—"}</td>
           <td>
             <div class="action-group">
-              <a href="add.html?edit=${p.id}" class="btn btn-sm btn-outline">✏️ Edit</a>
-              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${p.id},'${p.name}')">🗑 Delete</button>
+              ${p.deletedAt
+                ? p.categoryDeletedAt
+                  ? `<a href="category" class="btn btn-sm btn-warning">🗂 Phục hồi Category</a>`
+                  : `<button class="btn btn-sm btn-success" onclick="restoreProduct(${p.id},'${p.name.replace(/'/g, "\\'")}')">↩ Phục hồi</button>`
+                : `<a href="add?edit=${p.id}" class="btn btn-sm btn-outline">✏️ Edit</a>
+                   <button class="btn btn-sm btn-danger" onclick="confirmDelete(${p.id},'${p.name.replace(/'/g, "\\'")}')">🗑 Delete</button>`
+              }
             </div>
           </td>
         </tr>`,
               )
               .join("")
-          : `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy sản phẩm</td></tr>`;
+          : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy sản phẩm</td></tr>`;
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&#8249;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>&#8250;</button>`;
+        document.getElementById("pagination").innerHTML = html;
+      }
+
+      function goToPage(page) {
+        const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderPage();
       }
 
       function filterProducts() {
         const q = document.getElementById("searchInput").value.toLowerCase();
         const cat = document.getElementById("catFilter").value;
         const stk = document.getElementById("stockFilter").value;
-        renderProducts(
-          allProducts.filter(
-            (p) =>
-              (!q || p.name.toLowerCase().includes(q)) &&
-              (!cat || p.category_id == cat) &&
-              (!stk ||
-                (stk === "low"
-                  ? p.stock_quantity < 50
-                  : p.stock_quantity >= 50)),
-          ),
+        filteredProducts = allProducts.filter(
+          (p) =>
+            (!q || p.name.toLowerCase().includes(q)) &&
+            (!cat || p.categoryId == cat) &&
+            (!stk ||
+              (stk === "low"
+                ? p.stockQuantity < 50
+                : p.stockQuantity >= 50)),
         );
+        currentPage = 1;
+        renderPage();
       }
 
       function confirmDelete(id, name) {
         DeleteConfirm.show(`"${name}"`, async () => {
           await API.deleteProduct(id);
-          allProducts = allProducts.filter((p) => p.id !== id);
-          renderProducts(allProducts);
+          const idx = allProducts.findIndex((p) => p.id === id);
+          if (idx >= 0) allProducts[idx].deletedAt = new Date().toISOString();
+          filterProducts();
           Utils.toast(`Đã xóa sản phẩm "${name}"`);
+        });
+      }
+
+      function restoreProduct(id, name) {
+        DeleteConfirm.show(`"${name}"`, async () => {
+          try {
+            const restored = await API.restoreProduct(id);
+            const idx = allProducts.findIndex((p) => p.id === id);
+            if (idx >= 0) allProducts[idx] = restored;
+            filterProducts();
+            Utils.toast(`Đã phục hồi sản phẩm "${name}"`);
+          } catch (error) {
+            Utils.toast(error.message || "Có lỗi khi phục hồi", "error");
+          }
+        }, {
+          icon: "↩",
+          title: "Xác nhận phục hồi sản phẩm",
+          buttonText: "Phục hồi",
+          buttonClass: "btn-success",
+          confirmPrefix: "Bạn đang phục hồi sản phẩm",
         });
       }
 

@@ -182,16 +182,6 @@
                 <div style="padding: 18px">
                   <div class="detail-grid">
                     <div class="detail-field">
-                      <div class="detail-field-label">Rating Avg</div>
-                      <div class="detail-field-value" id="showRating">—</div>
-                    </div>
-                    <div class="detail-field">
-                      <div class="detail-field-label">Rating Count</div>
-                      <div class="detail-field-value" id="showRatingCount">
-                        —
-                      </div>
-                    </div>
-                    <div class="detail-field">
                       <div class="detail-field-label">Product ID</div>
                       <div class="detail-field-value" id="showId">—</div>
                     </div>
@@ -271,18 +261,14 @@
           if (p) {
             document.getElementById("productId").value = p.id;
             document.getElementById("fName").value = p.name;
-            document.getElementById("fCategory").value = p.category_id;
+            document.getElementById("fCategory").value = p.categoryId;
             document.getElementById("fPrice").value = p.price;
-            document.getElementById("fStock").value = p.stock_quantity;
-            document.getElementById("fImageUrl").value = p.image_url || "";
+            document.getElementById("fStock").value = p.stockQuantity;
+            document.getElementById("fDesc").value = p.description || "";
+            document.getElementById("fImageUrl").value = p.imageUrl || "";
             document.getElementById("fStatus").value = p.status || "ACTIVE";
-            document.getElementById("showRating").innerHTML = Utils.stars(
-              p.rating_avg,
-            );
-            document.getElementById("showRatingCount").textContent =
-              p.rating_count;
             document.getElementById("showId").textContent = p.id;
-            document.getElementById("showCatId").textContent = p.category_id;
+            document.getElementById("showCatId").textContent = p.categoryId;
           }
         }
       }
@@ -293,14 +279,15 @@
 
         const data = {
           name: document.getElementById("fName").value.trim(),
-          category_id: +document.getElementById("fCategory").value,
+          description: document.getElementById("fDesc").value.trim(),
+          categoryId: +document.getElementById("fCategory").value,
           price: +document.getElementById("fPrice").value,
-          stock_quantity: +document.getElementById("fStock").value,
-          image_url: document.getElementById("fImageUrl").value.trim(),
+          stockQuantity: +document.getElementById("fStock").value,
+          imageUrl: document.getElementById("fImageUrl").value.trim(),
           status: document.getElementById("fStatus").value,
         };
 
-        if (!data.name || !data.category_id || !data.price) {
+        if (!data.name || !data.categoryId || !data.price) {
           Utils.toast("Vui lòng điền đầy đủ thông tin bắt buộc!", "error");
           btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
           return;
@@ -313,6 +300,7 @@
           await API.createProduct(data);
           Utils.toast("Đã thêm sản phẩm mới!");
           document.getElementById("fName").value = "";
+          document.getElementById("fDesc").value = "";
           document.getElementById("fPrice").value = "";
           document.getElementById("fStock").value = "";
           document.getElementById("fImageUrl").value = "";

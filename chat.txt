@@ -353,9 +353,9 @@ File: src\main\java\com\doan\VitaStore\service\UserService.java
 
 package com.doan.VitaStore.service;
 
-import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
-import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
-import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.dto.request.admin.UserCreationRequest;
+import com.doan.VitaStore.dto.request.admin.UserUpdateRequest;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.entity.UserEntity;
 
 import java.util.List;
@@ -380,9 +380,9 @@ File: src\main\java\com\doan\VitaStore\service\impl\UserServiceImpl.java
 
 package com.doan.VitaStore.service.impl;
 
-import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
-import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
-import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.dto.request.admin.UserCreationRequest;
+import com.doan.VitaStore.dto.request.admin.UserUpdateRequest;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.entity.UserEntity;
 import com.doan.VitaStore.enums.Role;
 import com.doan.VitaStore.enums.Status;
@@ -506,9 +506,9 @@ File: src\main\java\com\doan\VitaStore\controller\admin\AdminController.java
 
 package com.doan.VitaStore.controller.admin;
 
-import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
-import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
-import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.dto.request.admin.UserCreationRequest;
+import com.doan.VitaStore.dto.request.admin.UserUpdateRequest;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.exception.UserNotFoundException;
 import com.doan.VitaStore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,8 +1,7 @@
 package com.doan.VitaStore.service.impl;
 
-import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
-import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
-import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.dto.request.admin.UserRequest;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.entity.UserEntity;
 import com.doan.VitaStore.enums.Role;
 import com.doan.VitaStore.enums.Status;
@@ -49,21 +48,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<AdminUserResponse> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::toAdminUserResponse)
                 .toList();
     }
 
     @Override
-    public AdminUserResponse getUserByIdResponse(int id) {
+    public UserResponse getUserByIdResponse(int id) {
         UserEntity user = userRepository.findById((long) id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         return toAdminUserResponse(user);
     }
 
     @Override
-    public AdminUserResponse createUserByAdmin(AdminUserCreationRequest request) {
+    public UserResponse createUserByAdmin(UserRequest request) {
         if (existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email này đã được sử dụng");
         }
@@ -82,7 +81,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AdminUserResponse updateUserByAdmin(int id, AdminUserUpdateRequest request) {
+    public UserResponse updateUserByAdmin(int id, UserRequest request) {
         UserEntity user = userRepository.findById((long) id)
                 .orElseThrow(() -> new UserNotFoundException(id));
 
@@ -109,8 +108,8 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    private AdminUserResponse toAdminUserResponse(UserEntity user) {
-        return new AdminUserResponse(
+    private UserResponse toAdminUserResponse(UserEntity user) {
+        return new UserResponse(
                 user.getUserId(),
                 user.getFullName(),
                 user.getEmail(),
@@ -122,7 +121,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AdminUserResponse restoreUserById(int id) {
+    public UserResponse restoreUserById(int id) {
         UserEntity user = userRepository.findById((long) id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         user.setDeletedAt(null);

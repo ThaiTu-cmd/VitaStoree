@@ -1,8 +1,7 @@
 package com.doan.VitaStore.service;
 
-import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
-import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
-import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.dto.request.admin.UserRequest;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.entity.UserEntity;
 
 import java.util.List;
@@ -14,14 +13,14 @@ public interface UserService {
 
     boolean existsByEmail(String email);
 
-    List<AdminUserResponse> getAllUsers();
+    List<UserResponse> getAllUsers();
 
-    AdminUserResponse getUserByIdResponse(int id);
+    UserResponse getUserByIdResponse(int id);
 
-    AdminUserResponse createUserByAdmin(AdminUserCreationRequest adminUserCreationRequest);
+    UserResponse createUserByAdmin(UserRequest request);
 
-    AdminUserResponse updateUserByAdmin(int id, AdminUserUpdateRequest adminUserUpdateRequest);
+    UserResponse updateUserByAdmin(int id, UserRequest request);
 
     void deleteUserById(int id);
-    AdminUserResponse restoreUserById(int id);
+    UserResponse restoreUserById(int id);
 }

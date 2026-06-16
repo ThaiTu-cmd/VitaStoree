@@ -1,9 +1,14 @@
 package com.doan.VitaStore.controller.admin;
 
-import com.doan.VitaStore.dto.request.AdminUserCreationRequest;
-import com.doan.VitaStore.dto.request.AdminUserUpdateRequest;
-import com.doan.VitaStore.dto.response.AdminUserResponse;
+import com.doan.VitaStore.dto.request.admin.CategoryRequest;
+import com.doan.VitaStore.dto.request.admin.ProductRequest;
+import com.doan.VitaStore.dto.request.admin.UserRequest;
+import com.doan.VitaStore.dto.response.admin.CategoryResponse;
+import com.doan.VitaStore.dto.response.admin.ProductResponse;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.exception.UserNotFoundException;
+import com.doan.VitaStore.service.CategoryService;
+import com.doan.VitaStore.service.ProductService;
 import com.doan.VitaStore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +24,12 @@ import java.util.Map;
 public class AdminController {
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private CategoryService categoryService;
+
+    @Autowired
+    private ProductService productService;
 
     @GetMapping({"", "/index"})
     public String dashboard() {
@@ -61,14 +72,14 @@ public class AdminController {
     }
 
     @GetMapping("/user/all")
-    public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @PostMapping("/user/add")
-    public ResponseEntity<?> addUser(@RequestBody AdminUserCreationRequest request) {
+    public ResponseEntity<?> addUser(@RequestBody UserRequest request) {
         try {
-            AdminUserResponse created = userService.createUserByAdmin(request);
+            UserResponse created = userService.createUserByAdmin(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -78,9 +89,9 @@ public class AdminController {
     @PutMapping("/user/{id}")
     public ResponseEntity<?> updateUser(
             @PathVariable int id,
-            @RequestBody AdminUserUpdateRequest request) {
+            @RequestBody UserRequest request) {
         try {
-            AdminUserResponse updated = userService.updateUserByAdmin(id, request);
+            UserResponse updated = userService.updateUserByAdmin(id, request);
             return ResponseEntity.ok(updated);
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -102,9 +113,119 @@ public class AdminController {
     @PostMapping("/user/{id}/restore")
     public ResponseEntity<?> restoreUser(@PathVariable int id) {
         try {
-            AdminUserResponse restored = userService.restoreUserById(id);
+            UserResponse restored = userService.restoreUserById(id);
             return ResponseEntity.ok(restored);
         } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/category/all")
+    public ResponseEntity<List<CategoryResponse>> getAllCategories() {
+        return ResponseEntity.ok(categoryService.getAllCategory());
+    }
+
+    @PostMapping("/category/add")
+    public  ResponseEntity<?> addCategory(@RequestBody CategoryRequest request) {
+        try {
+            CategoryResponse created = categoryService.createCategory(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/category/{id}")
+    public ResponseEntity<?> updateCategory(@PathVariable int id,
+            @RequestBody CategoryRequest request) {
+        try {
+            CategoryResponse updated = categoryService.updateCategory(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/category/{id}")
+    public ResponseEntity<?> deleteCategory(@PathVariable int id) {
+        try {
+            categoryService.deleteCategoryById((long) id);
+            return ResponseEntity.ok(Map.of("message", "Xoá danh mục thành công"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/category/{id}/restore")
+    public ResponseEntity<?> restoreCategory(@PathVariable int id) {
+        try {
+            CategoryResponse restored = categoryService.restoreCategoryById((long) id);
+            return ResponseEntity.ok(restored);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ── PRODUCTS ──────────────────────────────────────────────────
+
+    @GetMapping("/product/all")
+    public ResponseEntity<List<ProductResponse>> getAllProducts() {
+        return ResponseEntity.ok(productService.getAllProducts());
+    }
+
+    @GetMapping("/product/{id}")
+    public ResponseEntity<?> getProductById(@PathVariable int id) {
+        try {
+            ProductResponse product = productService.getProductById(id);
+            return ResponseEntity.ok(product);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/product/add")
+    public ResponseEntity<?> createProduct(@RequestBody ProductRequest request) {
+        try {
+            ProductResponse created = productService.createProduct(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/product/{id}")
+    public ResponseEntity<?> updateProduct(@PathVariable int id, @RequestBody ProductRequest request) {
+        try {
+            ProductResponse updated = productService.updateProduct(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/product/{id}")
+    public ResponseEntity<?> deleteProduct(@PathVariable int id) {
+        try {
+            productService.deleteProduct(id);
+            return ResponseEntity.ok(Map.of("message", "Xoá sản phẩm thành công"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/product/{id}/restore")
+    public ResponseEntity<?> restoreProduct(@PathVariable int id) {
+        try {
+            ProductResponse restored = productService.restoreProduct(id);
+            return ResponseEntity.ok(restored);
+        } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         }

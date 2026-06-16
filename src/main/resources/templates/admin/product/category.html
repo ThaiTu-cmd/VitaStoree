@@ -113,13 +113,14 @@
                     <th>Name</th>
                     <th>Description</th>
                     <th>Products</th>
+                    <th>DeletedAt</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="catsBody">
                   <tr>
                     <td
-                      colspan="5"
+                      colspan="6"
                       style="
                         text-align: center;
                         padding: 40px;
@@ -132,6 +133,8 @@
                 </tbody>
               </table>
             </div>
+
+            <div class="pagination" id="pagination"></div>
           </div>
         </div>
       </div>
@@ -169,7 +172,6 @@
               rows="3"
             ></textarea>
           </div>
-          <input type="hidden" id="catFormSlug" />
         </div>
         <div class="modal-footer">
           <button
@@ -202,12 +204,6 @@
             Bạn đang xóa<br /><strong id="deleteTargetLabel"></strong><br />Toàn
             bộ sản phẩm liên quan có thể bị ảnh hưởng!
           </div>
-          <div class="countdown-bar">
-            <div class="countdown-fill" id="countdownFill"></div>
-          </div>
-          <div class="countdown-label" id="countdownLabel">
-            Vui lòng chờ 10 giây...
-          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="DeleteConfirm.hide()">
@@ -229,43 +225,72 @@
     <script>
       let allCats = [];
       let editCatId = null;
+      let currentPage = 1;
+      const PAGE_SIZE = 10;
+      let filteredCats = [];
 
       async function loadCats() {
         allCats = await API.getCategories();
-        renderCats(allCats);
+        currentPage = 1;
+        filterCats();
       }
 
-      function renderCats(list) {
+      function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filteredCats.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(filteredCats.length / PAGE_SIZE) || 1;
+
         document.getElementById("catCount").textContent =
-          `${list.length} danh mục`;
-        document.getElementById("catsBody").innerHTML = list.length
-          ? list
+          `${filteredCats.length} danh mục`;
+        document.getElementById("catsBody").innerHTML = filteredCats.length
+          ? pageItems
               .map(
                 (c) => `
-        <tr>
+        <tr${c.deletedAt ? ' style="opacity:0.5"' : ''}>
           <td class="td-mono">${c.id}</td>
           <td><strong>${c.name}</strong></td>
           <td style="color:var(--text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.description || "—"}</td>
           <td><span class="badge badge-cyan">🛍 ${c.products} sản phẩm</span></td>
+          <td class="td-mono" style="color:var(--text-muted);font-size:12px">${c.deletedAt || "—"}</td>
           <td>
             <div class="action-group">
-              <button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(c)})'>✏️ Edit</button>
-              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${c.id},'${c.name}')">🗑 Delete</button>
+              ${c.deletedAt
+                ? `<button class="btn btn-sm btn-success" onclick="restoreCategory(${c.id},'${c.name}')">↩ Restore</button>`
+                : `<button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(c)})'>✏️ Edit</button>
+                   <button class="btn btn-sm btn-danger" onclick="confirmDelete(${c.id},'${c.name}')">🗑 Delete</button>`}
             </div>
           </td>
         </tr>`,
               )
               .join("")
-          : `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Không có danh mục</td></tr>`;
+          : `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Không có danh mục</td></tr>`;
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&#8249;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>&#8250;</button>`;
+        document.getElementById("pagination").innerHTML = html;
+      }
+
+      function goToPage(page) {
+        const totalPages = Math.ceil(filteredCats.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderPage();
       }
 
       function filterCats() {
         const q = document.getElementById("searchInput").value.toLowerCase();
-        renderCats(
-          allCats.filter(
-            (c) => c.name.toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q),
-          ),
+        filteredCats = allCats.filter(
+          (c) => c.name.toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q),
         );
+        currentPage = 1;
+        renderPage();
       }
 
       function openAdd() {
@@ -288,20 +313,12 @@
         Modal.open("catModalOverlay");
       }
 
-      function generateSlug(name) {
-        return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-") || "untitled";
-      }
-
       document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("catFormName").addEventListener("input", function () {
-          document.getElementById("catFormSlug").value = generateSlug(this.value);
-        });
         loadCats();
       });
 
       async function saveCategory() {
         const name = document.getElementById("catFormName").value.trim();
-        const slug = generateSlug(name);
         const description = document.getElementById("catFormDesc").value.trim();
         if (!name) {
           Utils.toast("Vui lòng nhập tên danh mục!", "error");
@@ -312,20 +329,20 @@
         btn.disabled = true;
         btn.textContent = "⏳...";
 
-        const data = { name, slug, description };
+        const data = { name, description };
         if (editCatId) {
-          await API.updateCategory(editCatId, data);
+          const updated = await API.updateCategory(editCatId, data);
           const idx = allCats.findIndex((c) => c.id === editCatId);
-          if (idx >= 0) allCats[idx] = { ...allCats[idx], ...data };
+          if (idx >= 0) allCats[idx] = updated;
           Utils.toast("Đã cập nhật danh mục!");
         } else {
           const created = await API.createCategory(data);
-          allCats.push({ ...created, products: 0 });
+          allCats.push(created);
           Utils.toast("Đã thêm danh mục mới!");
         }
 
         Modal.close("catModalOverlay");
-        renderCats(allCats);
+        filterCats();
         btn.disabled = false;
         btn.innerHTML = "💾 Lưu";
       }
@@ -333,9 +350,30 @@
       function confirmDelete(id, name) {
         DeleteConfirm.show(`danh mục "${name}"`, async () => {
           await API.deleteCategory(id);
-          allCats = allCats.filter((c) => c.id !== id);
-          renderCats(allCats);
+          const idx = allCats.findIndex((c) => c.id === id);
+          if (idx >= 0) allCats[idx].deletedAt = new Date().toISOString();
+          filterCats();
           Utils.toast(`Đã xóa danh mục "${name}"`);
+        });
+      }
+
+      function restoreCategory(id, name) {
+        DeleteConfirm.show(`"${name}"`, async () => {
+          try {
+            const restored = await API.restoreCategory(id);
+            const idx = allCats.findIndex((c) => c.id === id);
+            if (idx >= 0) allCats[idx] = restored;
+            filterCats();
+            Utils.toast(`Đã phục hồi danh mục "${name}"`);
+          } catch (error) {
+            Utils.toast(error.message || "Có lỗi khi phục hồi", "error");
+          }
+        }, {
+          icon: "↩",
+          title: "Xác nhận phục hồi danh mục",
+          buttonText: "Phục hồi",
+          buttonClass: "btn-success",
+          confirmPrefix: "Bạn đang phục hồi danh mục",
         });
       }
     </script>

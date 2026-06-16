@@ -1,6 +1,6 @@
-package com.doan.VitaStore.dto.response;
+package com.doan.VitaStore.dto.response.admin;
 
-public class AdminUserResponse {
+public class UserResponse {
     private int id;
     private String fullName;
     private String email;
@@ -9,10 +9,10 @@ public class AdminUserResponse {
     private String status;
     private String deletedAt;
 
-    public AdminUserResponse() {
+    public UserResponse() {
     }
 
-    public AdminUserResponse(int id, String fullName, String email, String phone, String role, String status, String deletedAt) {
+    public UserResponse(int id, String fullName, String email, String phone, String role, String status, String deletedAt) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;

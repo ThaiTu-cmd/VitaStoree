@@ -262,12 +262,6 @@
           <div class="confirm-text">
             Bạn đang xóa tài khoản<br /><strong id="deleteTargetLabel"></strong>
           </div>
-          <div class="countdown-bar">
-            <div class="countdown-fill" id="countdownFill"></div>
-          </div>
-          <div class="countdown-label" id="countdownLabel">
-            Vui lòng chờ 10 giây...
-          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="DeleteConfirm.hide()">
@@ -293,9 +287,7 @@
       const PAGE_SIZE = 10;
       let filteredUsers = [];
 
-      async function loadUsers() {
-        allUsers = await API.getUsers();
-
+      function updateStats() {
         document.getElementById("countAll").textContent = allUsers.length;
         document.getElementById("countUsers").textContent = allUsers.filter(
            (u) => u.role === "USER",
@@ -306,12 +298,17 @@
         document.getElementById("countActive").textContent = allUsers.filter(
           (u) => u.status === "ACTIVE",
         ).length;
+      }
 
+      async function loadUsers() {
+        allUsers = await API.getUsers();
+        updateStats();
         currentPage = 1;
         filterUsers();
       }
 
       function renderPage() {
+        updateStats();
         const start = (currentPage - 1) * PAGE_SIZE;
         const pageItems = filteredUsers.slice(start, start + PAGE_SIZE);
         const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE) || 1;
@@ -322,7 +319,7 @@
           ? pageItems
               .map(
                 (u) => `
-        <tr>
+        <tr${u.deletedAt ? ' style="opacity:0.5"' : ''}>
           <td class="td-mono">${u.id}</td>
           <td><strong>${u.fullName}</strong></td>
           <td style="color:var(--text-secondary)">${u.email}</td>
@@ -332,10 +329,10 @@
           <td class="td-mono" style="color:var(--text-muted);font-size:12px">${u.deletedAt || "—"}</td>
           <td>
             <div class="action-group">
-              <button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(u)})'>✏️ Edit</button>
               ${u.deletedAt
-                ? `<button class="btn btn-sm btn-success" onclick="restoreUser(${u.id},'${u.fullName}')">↩</button>`
-                : `<button class="btn btn-sm btn-danger" onclick="confirmDelete(${u.id},'${u.fullName}')">🗑</button>`}
+                ? `<button class="btn btn-sm btn-success" onclick="restoreUser(${u.id},'${u.fullName}')">↩ Restore</button>`
+                : `<button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(u)})'>✏️ Edit</button>
+                   <button class="btn btn-sm btn-danger" onclick="confirmDelete(${u.id},'${u.fullName}')">🗑 Delete</button>`}
             </div>
           </td>
         </tr>`,
@@ -434,15 +431,18 @@
 
         try {
           if (editUserId) {
-            await API.updateUser(editUserId, data);
+            const updated = await API.updateUser(editUserId, data);
+            const idx = allUsers.findIndex((u) => u.id === editUserId);
+            if (idx >= 0) allUsers[idx] = updated;
             Utils.toast("Đã cập nhật tài khoản!");
           } else {
-            await API.createUser(data);
+            const created = await API.createUser(data);
+            allUsers.push(created);
             Utils.toast("Đã thêm người dùng mới!");
           }
 
-          await loadUsers();
           Modal.close("userModalOverlay");
+          filterUsers();
         } catch (error) {
           Utils.toast(error.message || "Có lỗi khi lưu người dùng", "error");
         } finally {
@@ -455,7 +455,9 @@
         DeleteConfirm.show(`"${name}"`, async () => {
           try {
             await API.deleteUser(id);
-            await loadUsers();
+            const idx = allUsers.findIndex((u) => u.id === id);
+            if (idx >= 0) allUsers[idx].deletedAt = new Date().toISOString();
+            filterUsers();
             Utils.toast(`Đã xóa tài khoản "${name}"`);
           } catch (error) {
             Utils.toast(error.message || "Có lỗi khi xóa người dùng", "error");
@@ -463,16 +465,24 @@
         });
       }
 
-      async function restoreUser(id, name) {
-        if (!confirm(`Phục hồi tài khoản "${name}"?`)) return;
-        try {
-          const res = await fetch(`${DB_CONFIG.apiBase}/user/${id}/restore`, { method: "POST", headers: API._h() });
-          if (!res.ok) throw new Error("Không thể phục hồi");
-          Utils.toast(`Đã phục hồi tài khoản "${name}"`);
-          await loadUsers();
-        } catch (error) {
-          Utils.toast(error.message || "Có lỗi khi phục hồi", "error");
-        }
+      function restoreUser(id, name) {
+        DeleteConfirm.show(`"${name}"`, async () => {
+          try {
+            const restored = await API.restoreUser(id);
+            const idx = allUsers.findIndex((u) => u.id === id);
+            if (idx >= 0) allUsers[idx] = restored;
+            filterUsers();
+            Utils.toast(`Đã phục hồi tài khoản "${name}"`);
+          } catch (error) {
+            Utils.toast(error.message || "Có lỗi khi phục hồi", "error");
+          }
+        }, {
+          icon: "↩",
+          title: "Xác nhận phục hồi tài khoản",
+          buttonText: "Phục hồi",
+          buttonClass: "btn-success",
+          confirmPrefix: "Bạn đang phục hồi tài khoản",
+        });
       }
 
       document.addEventListener("DOMContentLoaded", loadUsers);

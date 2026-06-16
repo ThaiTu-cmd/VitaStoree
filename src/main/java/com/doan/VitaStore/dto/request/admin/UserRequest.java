@@ -1,9 +1,9 @@
-package com.doan.VitaStore.dto.request;
+package com.doan.VitaStore.dto.request.admin;
 
 import com.doan.VitaStore.enums.Role;
 import com.doan.VitaStore.enums.Status;
 
-public class AdminUserUpdateRequest {
+public class UserRequest {
     private String fullName;
     private String email;
     private String phone;
