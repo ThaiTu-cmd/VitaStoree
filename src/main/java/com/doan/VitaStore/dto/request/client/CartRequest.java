@@ -1,4 +1,4 @@
-package com.doan.VitaStore.dto.request.admin;
+package com.doan.VitaStore.dto.request.client;
 
 public class CartRequest {
     private int productId;

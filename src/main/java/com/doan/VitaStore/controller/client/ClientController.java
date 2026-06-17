@@ -1,9 +1,11 @@
 package com.doan.VitaStore.controller.client;
 
+import com.doan.VitaStore.dto.request.client.AddressRequest;
 import com.doan.VitaStore.dto.response.client.ShopCategoryResponse;
 import com.doan.VitaStore.dto.response.client.ShopProductResponse;
 import com.doan.VitaStore.entity.UserEntity;
 import com.doan.VitaStore.security.service.UserDetailsImpl;
+import com.doan.VitaStore.service.AddressService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +35,9 @@ public class ClientController {
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private AddressService addressService;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -109,15 +114,97 @@ public class ClientController {
     @GetMapping("/address")
     public String address(Model model) {
         addUserToModel(model);
-        model.addAttribute("addresses", Collections.emptyList());
+        UserEntity user = getCurrentUser();
+        if (user != null) {
+            model.addAttribute("addresses", addressService.getAddressesByUser(user.getUserId()));
+        } else {
+            model.addAttribute("addresses", Collections.emptyList());
+        }
         return "client/views/address";
     }
 
+    @PostMapping("/address/add")
+    public String addAddress(
+            @RequestParam("fullName") String fullName,
+            @RequestParam("phone") String phone,
+            @RequestParam("city") String city,
+            @RequestParam("province") String province,
+            @RequestParam("addressLine2") String addressLine2,
+            @RequestParam("addressLine1") String addressLine1,
+            @RequestParam(value = "isDefault", required = false) String isDefault,
+            RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null) return "redirect:/auth/login";
+        try {
+            AddressRequest req = new AddressRequest(
+                    user.getUserId(), fullName, phone, city, province,
+                    addressLine2, addressLine1, "true".equals(isDefault));
+            addressService.createAddress(req);
+            ra.addFlashAttribute("addressSuccess", "Thêm địa chỉ thành công!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("addressError", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/address";
+    }
+
+    @PostMapping("/address/update")
+    public String updateAddress(
+            @RequestParam("id") int id,
+            @RequestParam("fullName") String fullName,
+            @RequestParam("phone") String phone,
+            @RequestParam("city") String city,
+            @RequestParam("province") String province,
+            @RequestParam("addressLine2") String addressLine2,
+            @RequestParam("addressLine1") String addressLine1,
+            @RequestParam(value = "isDefault", required = false) String isDefault,
+            RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null) return "redirect:/auth/login";
+        try {
+            AddressRequest req = new AddressRequest(
+                    user.getUserId(), fullName, phone, city, province,
+                    addressLine2, addressLine1, "true".equals(isDefault));
+            addressService.updateAddress(id, req);
+            ra.addFlashAttribute("addressSuccess", "Cập nhật địa chỉ thành công!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("addressError", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/address";
+    }
+
+    @PostMapping("/address/delete")
+    public String deleteAddress(@RequestParam("id") int id, RedirectAttributes ra) {
+        try {
+            addressService.deleteAddressById(id);
+            ra.addFlashAttribute("addressSuccess", "Đã xóa địa chỉ");
+        } catch (Exception e) {
+            ra.addFlashAttribute("addressError", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/address";
+    }
+
+    @PostMapping("/address/set-default")
+    public String setDefaultAddress(@RequestParam("id") int id, RedirectAttributes ra) {
+        try {
+            addressService.setDefaultById(id);
+            ra.addFlashAttribute("addressSuccess", "Đã đặt làm mặc định");
+        } catch (Exception e) {
+            ra.addFlashAttribute("addressError", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/address";
+    }
+
     private void addUserToModel(Model model) {
+        UserEntity user = getCurrentUser();
+        if (user != null) model.addAttribute("user", user);
+    }
+
+    private UserEntity getCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof UserDetailsImpl) {
-            model.addAttribute("user", ((UserDetailsImpl) auth.getPrincipal()).getUser());
+            return ((UserDetailsImpl) auth.getPrincipal()).getUser();
         }
+        return null;
     }
 
     @GetMapping("/about")

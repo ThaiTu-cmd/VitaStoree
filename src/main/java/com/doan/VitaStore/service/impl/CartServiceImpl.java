@@ -1,8 +1,8 @@
 package com.doan.VitaStore.service.impl;
 
-import com.doan.VitaStore.dto.request.admin.CartRequest;
-import com.doan.VitaStore.dto.response.admin.CartItemResponse;
-import com.doan.VitaStore.dto.response.admin.CartResponse;
+import com.doan.VitaStore.dto.request.client.CartRequest;
+import com.doan.VitaStore.dto.response.client.CartItemResponse;
+import com.doan.VitaStore.dto.response.client.CartResponse;
 import com.doan.VitaStore.entity.CartItemsEntity;
 import com.doan.VitaStore.entity.CartsEntity;
 import com.doan.VitaStore.entity.ProductsEntity;

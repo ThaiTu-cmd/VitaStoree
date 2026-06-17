@@ -1,14 +1,20 @@
 package com.doan.VitaStore.controller.admin;
 
-import com.doan.VitaStore.dto.request.admin.CartRequest;
 import com.doan.VitaStore.dto.request.admin.CategoryRequest;
 import com.doan.VitaStore.dto.request.admin.ProductRequest;
 import com.doan.VitaStore.dto.request.admin.UserRequest;
-import com.doan.VitaStore.dto.response.admin.CartResponse;
+import com.doan.VitaStore.dto.request.client.AddressRequest;
+import com.doan.VitaStore.dto.request.client.CartRequest;
+import com.doan.VitaStore.dto.response.admin.CategoryResponse;
+import com.doan.VitaStore.dto.response.admin.ProductResponse;
+import com.doan.VitaStore.dto.response.admin.UserResponse;
+import com.doan.VitaStore.dto.response.client.AddressResponse;
+import com.doan.VitaStore.dto.response.client.CartResponse;
 import com.doan.VitaStore.dto.response.admin.CategoryResponse;
 import com.doan.VitaStore.dto.response.admin.ProductResponse;
 import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.exception.UserNotFoundException;
+import com.doan.VitaStore.service.AddressService;
 import com.doan.VitaStore.service.CartService;
 import com.doan.VitaStore.service.CategoryService;
 import com.doan.VitaStore.service.ProductService;
@@ -36,6 +42,9 @@ public class AdminController {
 
     @Autowired
     private CartService cartService;
+
+    @Autowired
+    private AddressService addressService;
 
     @GetMapping({"", "/index"})
     public String dashboard() {
@@ -297,6 +306,70 @@ public class AdminController {
         try {
             cartService.deleteCart(id);
             return ResponseEntity.ok(Map.of("message", "Đã xóa giỏ hàng"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ===== ADDRESS =====
+
+    @GetMapping("/address/list")
+    public String addressList() {
+        return "admin/address/list";
+    }
+
+    @GetMapping("/address/all")
+    public ResponseEntity<List<AddressResponse>> getAllAddresses() {
+        return ResponseEntity.ok(addressService.getAllAddresses());
+    }
+
+    @GetMapping("/address/{id}")
+    public ResponseEntity<?> getAddressById(@PathVariable int id) {
+        try {
+            return ResponseEntity.ok(addressService.getAddressById(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/address/add")
+    public ResponseEntity<?> addAddress(@RequestBody AddressRequest request) {
+        try {
+            AddressResponse created = addressService.createAddress(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/address/{id}")
+    public ResponseEntity<?> updateAddress(@PathVariable int id, @RequestBody AddressRequest request) {
+        try {
+            AddressResponse updated = addressService.updateAddress(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/address/{id}")
+    public ResponseEntity<?> deleteAddress(@PathVariable int id) {
+        try {
+            addressService.deleteAddressById(id);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa địa chỉ"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/address/{id}/restore")
+    public ResponseEntity<?> restoreAddress(@PathVariable int id) {
+        try {
+            AddressResponse restored = addressService.restoreAddressById(id);
+            return ResponseEntity.ok(restored);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));

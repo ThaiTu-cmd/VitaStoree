@@ -1,7 +1,7 @@
 package com.doan.VitaStore.controller.client;
 
-import com.doan.VitaStore.dto.request.admin.CartRequest;
-import com.doan.VitaStore.dto.response.admin.CartResponse;
+import com.doan.VitaStore.dto.request.client.CartRequest;
+import com.doan.VitaStore.dto.response.client.CartResponse;
 import com.doan.VitaStore.security.service.UserDetailsImpl;
 import com.doan.VitaStore.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;

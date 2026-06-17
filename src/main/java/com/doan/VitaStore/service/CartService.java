@@ -1,7 +1,7 @@
 package com.doan.VitaStore.service;
 
-import com.doan.VitaStore.dto.request.admin.CartRequest;
-import com.doan.VitaStore.dto.response.admin.CartResponse;
+import com.doan.VitaStore.dto.request.client.CartRequest;
+import com.doan.VitaStore.dto.response.client.CartResponse;
 
 import java.util.List;
 

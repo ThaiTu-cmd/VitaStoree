@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Address — VitaStore Admin</title>
+    <link rel="stylesheet" th:href="@{/admin/css/style.css?v=1}" />
+  </head>
+  <body th:attr="data-context-path=${#request.contextPath}">
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+      window.__ADMIN_API_BASE = /*[[@{/admin}]]*/ '';
+      /*]]>*/
+    </script>
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-icon">🌿</div>
+          <div>
+            <div class="logo-text">VitaStore</div>
+            <div class="logo-sub">Admin Panel</div>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <div class="nav-section-label">Tổng quan</div>
+          <a class="nav-item" th:href="@{/admin}"
+            ><span class="nav-icon">🏠</span> Dashboard</a
+          >
+          <div class="nav-section-label">Quản lý đơn hàng</div>
+          <a class="nav-item" th:href="@{/admin/order/list}"
+            ><span class="nav-icon">📦</span> Orders</a
+          >
+          <div class="nav-section-label">Sản phẩm</div>
+          <a class="nav-item" th:href="@{/admin/product/list}"
+            ><span class="nav-icon">🛍</span> Products</a
+          >
+          <a class="nav-item" th:href="@{/admin/product/category}"
+            ><span class="nav-icon">🗂</span> Categories</a
+          >
+          <div class="nav-section-label">Người dùng</div>
+          <a class="nav-item" th:href="@{/admin/user/list}"
+            ><span class="nav-icon">👥</span> Users</a
+          >
+          <a class="nav-item active" th:href="@{/admin/address/list}"
+            ><span class="nav-icon">📍</span> Addresses</a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="admin-profile">
+            <div class="admin-avatar">A</div>
+            <div>
+              <div class="admin-name">Admin Master</div>
+              <div class="admin-role">Super Admin</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-wrap">
+        <header class="topbar">
+          <div class="topbar-info">
+            <div class="topbar-title">Addresses</div>
+            <div class="topbar-breadcrumb">Người dùng → Quản lý địa chỉ</div>
+          </div>
+          <div class="topbar-right">
+            <button class="icon-btn" title="Cài đặt" onclick="toggleLogoutDropdown()">⚙️</button>
+            <div class="dropdown-menu" id="logoutDropdown" style="display: none">
+              <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="page-wrap">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Quản lý địa chỉ</div>
+              <div class="page-subtitle">Thêm, sửa, xóa địa chỉ người dùng</div>
+            </div>
+            <button class="btn btn-primary" onclick="openAdd()">+ Thêm địa chỉ</button>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="toolbar">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="searchInput" placeholder="Tìm địa chỉ..." oninput="filterAddresses()" />
+                </div>
+              </div>
+              <span class="badge badge-info" id="addrCount">—</span>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Receiver</th>
+                    <th>Phone</th>
+                    <th>Full Address</th>
+                    <th>Default</th>
+                    <th>DeletedAt</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="addressBody">
+                  <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ADD / EDIT ADDRESS MODAL ── -->
+    <div class="modal-overlay" id="addrModalOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title" id="addrModalTitle">Thêm địa chỉ</div>
+          <button class="btn btn-ghost btn-icon" onclick="Modal.close('addrModalOverlay')">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="addrFormId" />
+          <div class="form-row">
+            <div class="form-group" style="flex:2">
+              <label class="form-label">User ID *</label>
+              <input class="form-control" id="addrFormUserId" required placeholder="VD: 1" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Mặc định</label>
+              <select class="form-control" id="addrFormDefault">
+                <option value="false">Không</option>
+                <option value="true">Có</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Người nhận *</label>
+              <input class="form-control" id="addrFormName" required placeholder="Nguyễn Văn A" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Số điện thoại *</label>
+              <input class="form-control" id="addrFormPhone" required placeholder="0987654321" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Địa chỉ đường *</label>
+            <input class="form-control" id="addrFormStreet" required placeholder="123 Nguyễn Huệ" />
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Phường/Xã *</label>
+              <input class="form-control" id="addrFormWard" required placeholder="Phường Bến Nghé" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Quận/Huyện *</label>
+              <input class="form-control" id="addrFormDistrict" required placeholder="Quận 1" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label">Tỉnh/Thành *</label>
+              <input class="form-control" id="addrFormProvince" required placeholder="TP. Hồ Chí Minh" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="Modal.close('addrModalOverlay')">Hủy</button>
+          <button class="btn btn-primary" id="addrSaveBtn" onclick="saveAddress()">💾 Lưu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE CONFIRM -->
+    <div class="modal-overlay" id="deleteModalOverlay">
+      <div class="modal modal-sm">
+        <div class="modal-body" style="padding:32px 28px 20px;text-align:center">
+          <div class="confirm-icon">🗑️</div>
+          <div class="confirm-title">Xác nhận xóa địa chỉ</div>
+          <div class="confirm-text">Bạn đang xóa<br /><strong id="deleteTargetLabel"></strong></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="DeleteConfirm.hide()">Hủy</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn" onclick="DeleteConfirm.confirm()" disabled>Xác nhận xóa</button>
+        </div>
+      </div>
+    </div>
+
+    <script th:src="@{/admin/js/admin.js}"></script>
+    <script>
+      let allAddresses = [];
+      let editAddrId = null;
+      let currentPage = 1;
+      const PAGE_SIZE = 10;
+      let filteredAddresses = [];
+
+      async function loadAddresses() {
+        allAddresses = await API.getAddresses();
+        currentPage = 1;
+        filterAddresses();
+      }
+
+      function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filteredAddresses.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(filteredAddresses.length / PAGE_SIZE) || 1;
+
+        document.getElementById("addrCount").textContent = `${filteredAddresses.length} địa chỉ`;
+        document.getElementById("addressBody").innerHTML = filteredAddresses.length
+          ? pageItems.map(a => `
+        <tr${a.deletedAt ? ' style="opacity:0.5"' : ''}>
+          <td class="td-mono">${a.id}</td>
+          <td>${a.userName || "—"}<br/><small style="color:var(--text-muted)">ID: ${a.userId}</small></td>
+          <td><strong>${a.receiverName}</strong></td>
+          <td>${a.receiverPhone}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.fullAddress}">${a.fullAddress || "—"}</td>
+          <td>${a.default ? '<span class="badge badge-success">✓ Mặc định</span>' : '<span class="badge badge-gray">—</span>'}</td>
+          <td class="td-mono" style="color:var(--text-muted);font-size:12px">${a.deletedAt || "—"}</td>
+          <td>
+            <div class="action-group">
+              ${a.deletedAt
+                ? `<button class="btn btn-sm btn-success" onclick="restoreAddress(${a.id},'${a.receiverName}')">↩ Restore</button>`
+                : `<button class="btn btn-sm btn-outline" onclick='openEdit(${JSON.stringify(a)})'>✏️ Edit</button>
+                   <button class="btn btn-sm btn-danger" onclick="confirmDelete(${a.id},'${a.receiverName}')">🗑 Delete</button>`}
+            </div>
+          </td>
+        </tr>`).join("")
+          : `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Không có địa chỉ</td></tr>`;
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&#8249;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>&#8250;</button>`;
+        document.getElementById("pagination").innerHTML = html;
+      }
+
+      function goToPage(p) {
+        if (p < 1 || p > Math.ceil(filteredAddresses.length / PAGE_SIZE)) return;
+        currentPage = p;
+        renderPage();
+      }
+
+      function filterAddresses() {
+        const q = (document.getElementById("searchInput").value || "").toLowerCase();
+        filteredAddresses = q
+          ? allAddresses.filter(a =>
+              (a.receiverName || "").toLowerCase().includes(q) ||
+              (a.receiverPhone || "").includes(q) ||
+              (a.fullAddress || "").toLowerCase().includes(q) ||
+              (a.userName || "").toLowerCase().includes(q)
+            )
+          : [...allAddresses];
+        currentPage = 1;
+        renderPage();
+      }
+
+      function openAdd() {
+        editAddrId = null;
+        document.getElementById("addrModalTitle").textContent = "Thêm địa chỉ";
+        document.getElementById("addrSaveBtn").textContent = "💾 Thêm";
+        document.getElementById("addrFormId").value = "";
+        document.getElementById("addrFormUserId").value = "";
+        document.getElementById("addrFormName").value = "";
+        document.getElementById("addrFormPhone").value = "";
+        document.getElementById("addrFormStreet").value = "";
+        document.getElementById("addrFormWard").value = "";
+        document.getElementById("addrFormDistrict").value = "";
+        document.getElementById("addrFormProvince").value = "";
+        document.getElementById("addrFormDefault").value = "false";
+        Modal.open("addrModalOverlay");
+      }
+
+      function openEdit(a) {
+        editAddrId = a.id;
+        document.getElementById("addrModalTitle").textContent = "Sửa địa chỉ";
+        document.getElementById("addrSaveBtn").textContent = "💾 Cập nhật";
+        document.getElementById("addrFormId").value = a.id;
+        document.getElementById("addrFormUserId").value = a.userId;
+        document.getElementById("addrFormName").value = a.receiverName;
+        document.getElementById("addrFormPhone").value = a.receiverPhone;
+        document.getElementById("addrFormStreet").value = a.streetAddress;
+        document.getElementById("addrFormWard").value = a.ward;
+        document.getElementById("addrFormDistrict").value = a.district;
+        document.getElementById("addrFormProvince").value = a.province;
+        document.getElementById("addrFormDefault").value = a.default ? "true" : "false";
+        Modal.open("addrModalOverlay");
+      }
+
+      async function saveAddress() {
+        const id = editAddrId;
+        const isDef = document.getElementById("addrFormDefault").value === "true";
+        const data = {
+          userId: parseInt(document.getElementById("addrFormUserId").value),
+          receiverName: document.getElementById("addrFormName").value.trim(),
+          receiverPhone: document.getElementById("addrFormPhone").value.trim(),
+          streetAddress: document.getElementById("addrFormStreet").value.trim(),
+          ward: document.getElementById("addrFormWard").value.trim(),
+          district: document.getElementById("addrFormDistrict").value.trim(),
+          province: document.getElementById("addrFormProvince").value.trim(),
+          default: isDef,
+        };
+
+        if (!data.receiverName || !data.receiverPhone || !data.streetAddress || !data.ward || !data.district || !data.province) {
+          Utils.toast("Vui lòng điền đầy đủ thông tin", "error");
+          return;
+        }
+
+        try {
+          if (id) {
+            await API.updateAddress(id, data);
+            Utils.toast("Đã cập nhật địa chỉ", "success");
+          } else {
+            await API.createAddress(data);
+            Utils.toast("Đã thêm địa chỉ", "success");
+          }
+          Modal.close("addrModalOverlay");
+          await loadAddresses();
+        } catch (e) {
+          Utils.toast(e.message || "Lỗi khi lưu địa chỉ", "error");
+        }
+      }
+
+      function confirmDelete(id, name) {
+        DeleteConfirm.show(name, async () => {
+          try {
+            await API.deleteAddress(id);
+            Utils.toast("Đã xóa địa chỉ", "success");
+            await loadAddresses();
+          } catch (e) {
+            Utils.toast(e.message || "Lỗi khi xóa", "error");
+          }
+        }, {
+          title: "Xác nhận xóa địa chỉ",
+          confirmSuffix: "Địa chỉ này sẽ bị ẩn và có thể phục hồi sau.",
+        });
+      }
+
+      function restoreAddress(id, name) {
+        DeleteConfirm.show(name, async () => {
+          try {
+            await API.restoreAddress(id);
+            Utils.toast("Đã phục hồi địa chỉ", "success");
+            await loadAddresses();
+          } catch (e) {
+            Utils.toast(e.message || "Lỗi khi phục hồi", "error");
+          }
+        }, {
+          icon: "↩️",
+          title: "Xác nhận phục hồi",
+          buttonText: "Xác nhận phục hồi",
+          buttonClass: "btn-success",
+          confirmPrefix: "Bạn đang phục hồi",
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", loadAddresses);
+    </script>
+  </body>
+</html>

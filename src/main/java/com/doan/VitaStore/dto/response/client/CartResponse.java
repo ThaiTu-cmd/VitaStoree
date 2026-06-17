@@ -1,4 +1,4 @@
-package com.doan.VitaStore.dto.response.admin;
+package com.doan.VitaStore.dto.response.client;
 
 import java.math.BigDecimal;
 import java.util.List;

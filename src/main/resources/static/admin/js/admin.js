@@ -6,12 +6,13 @@
 /* ───────────────────────────────────────────────────────────────
    DB CONFIG  ← Set apiBase and token once DB is connected
 ─────────────────────────────────────────────────────────────── */
-const pathPrefixBeforeAdmin = window.location.pathname.split("/admin")[0] || "";
 const APP_CONTEXT_PATH =
-  document.body?.dataset?.contextPath || pathPrefixBeforeAdmin;
+  document.body?.dataset?.contextPath ||
+  window.location.pathname.split("/admin")[0] ||
+  "";
 
 const DB_CONFIG = {
-  apiBase: `${APP_CONTEXT_PATH}/admin`,
+  apiBase: window.__ADMIN_API_BASE || `${APP_CONTEXT_PATH}/admin`,
 };
 
 /* ───────────────────────────────────────────────────────────────
@@ -255,6 +256,49 @@ const API = {
       headers: this._h(),
     });
     if (!res.ok) throw new Error("Không thể xóa giỏ hàng");
+    return res.json();
+  },
+
+  // ── ADDRESS ──────────────────────────────────────────────────
+  async getAddresses() {
+    const res = await fetch(`${DB_CONFIG.apiBase}/address/all`, {
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể tải danh sách địa chỉ");
+    return res.json();
+  },
+  async createAddress(d) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/address/add`, {
+      method: "POST",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể thêm địa chỉ");
+    return res.json();
+  },
+  async updateAddress(id, d) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/address/${id}`, {
+      method: "PUT",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể cập nhật địa chỉ");
+    return res.json();
+  },
+  async deleteAddress(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/address/${id}`, {
+      method: "DELETE",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể xóa địa chỉ");
+    return res.json();
+  },
+  async restoreAddress(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/address/${id}/restore`, {
+      method: "POST",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể phục hồi địa chỉ");
     return res.json();
   },
 
