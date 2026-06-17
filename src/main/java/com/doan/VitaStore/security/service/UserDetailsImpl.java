@@ -27,6 +27,8 @@ public class UserDetailsImpl implements UserDetails{
 
     public String getFullName() { return user.getFullName(); }
 
+    public UserEntity getUser() { return user; }
+
     @Override
     public boolean isAccountNonExpired() {return true;}
 

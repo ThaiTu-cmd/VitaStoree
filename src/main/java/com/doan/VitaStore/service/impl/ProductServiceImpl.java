@@ -2,17 +2,26 @@ package com.doan.VitaStore.service.impl;
 
 import com.doan.VitaStore.dto.request.admin.ProductRequest;
 import com.doan.VitaStore.dto.response.admin.ProductResponse;
+import com.doan.VitaStore.dto.response.client.ShopProductResponse;
 import com.doan.VitaStore.entity.CategoriesEntity;
 import com.doan.VitaStore.entity.ProductsEntity;
 import com.doan.VitaStore.enums.ProductStatus;
 import com.doan.VitaStore.repository.CategoriesRepository;
 import com.doan.VitaStore.repository.ProductsRepository;
 import com.doan.VitaStore.service.ProductService;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -93,11 +102,92 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Page<ShopProductResponse> getShopProducts(String search, Integer categoryId, String sort, String price, int page) {
+        Specification<ProductsEntity> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            predicates.add(cb.isNull(root.get("deletedAt")));
+
+            if (search != null && !search.isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("productName")), "%" + search.toLowerCase() + "%"));
+            }
+
+            if (categoryId != null && categoryId > 0) {
+                predicates.add(cb.equal(root.get("category").get("categoryId"), categoryId));
+            }
+
+            if (price != null && !price.isBlank()) {
+                switch (price) {
+                    case "under500k":
+                        predicates.add(cb.lessThan(root.get("price"), 500000));
+                        break;
+                    case "500k-1500k":
+                        predicates.add(cb.between(root.get("price"), 500000, 1500000));
+                        break;
+                    case "1500k-3000k":
+                        predicates.add(cb.between(root.get("price"), 1500000, 3000000));
+                        break;
+                    case "over3000k":
+                        predicates.add(cb.greaterThan(root.get("price"), 3000000));
+                        break;
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Sort sortBy;
+        if (sort != null) {
+            sortBy = switch (sort) {
+                case "name-asc" -> Sort.by("productName").ascending();
+                case "name-desc" -> Sort.by("productName").descending();
+                case "price-asc" -> Sort.by("price").ascending();
+                case "price-desc" -> Sort.by("price").descending();
+                default -> Sort.by("productId").descending();
+            };
+        } else {
+            sortBy = Sort.by("productId").descending();
+        }
+
+        Pageable pageable = PageRequest.of(page - 1, 12, sortBy);
+        return productRepository.findAll(spec, pageable).map(this::toShopResponse);
+    }
+
+    @Override
+    public long countByPriceRange(long min, long max) {
+        return productRepository.countByDeletedAtIsNullAndPriceBetween(BigDecimal.valueOf(min), BigDecimal.valueOf(max));
+    }
+
+    @Override
+    public long countUnderPrice(long max) {
+        return productRepository.countByDeletedAtIsNullAndPriceLessThan(BigDecimal.valueOf(max));
+    }
+
+    @Override
+    public long countOverPrice(long min) {
+        return productRepository.countByDeletedAtIsNullAndPriceGreaterThan(BigDecimal.valueOf(min));
+    }
+
+    @Override
     public ProductResponse restoreProduct(int id) {
         ProductsEntity product = productRepository.findById((long) id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
         product.setDeletedAt(null);
         return toResponse(productRepository.save(product));
+    }
+
+    private ShopProductResponse toShopResponse(ProductsEntity product) {
+        String img = product.getImageURL();
+        if (img != null && !img.startsWith("http")) {
+            img = "/VitaStore" + img;
+        }
+        return new ShopProductResponse(
+                product.getProductId(),
+                product.getProductName(),
+                img,
+                product.getCategory() != null ? product.getCategory().getCategoryName() : null,
+                product.getPrice()
+        );
     }
 
     private ProductResponse toResponse(ProductsEntity product) {

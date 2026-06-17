@@ -208,6 +208,56 @@ const API = {
     return res.json();
   },
 
+  // ── CARTS ───────────────────────────────────────────────────
+  async getCarts() {
+    const res = await fetch(`${DB_CONFIG.apiBase}/cart/all`, {
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể tải giỏ hàng");
+    return res.json();
+  },
+  async getCartById(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/cart/${id}`, {
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể tải thông tin giỏ hàng");
+    return res.json();
+  },
+  async addCartItem(cartId, d) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/cart/${cartId}/items`, {
+      method: "POST",
+      headers: this._h(),
+      body: JSON.stringify(d),
+    });
+    if (!res.ok) throw new Error("Không thể thêm mục vào giỏ");
+    return res.json();
+  },
+  async updateCartItemQuantity(cartId, itemId, quantity) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/cart/${cartId}/items/${itemId}`, {
+      method: "PUT",
+      headers: this._h(),
+      body: JSON.stringify({ quantity }),
+    });
+    if (!res.ok) throw new Error("Không thể cập nhật số lượng");
+    return res.json();
+  },
+  async removeCartItem(cartId, itemId) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/cart/${cartId}/items/${itemId}`, {
+      method: "DELETE",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể xóa mục khỏi giỏ");
+    return res.json();
+  },
+  async deleteCart(id) {
+    const res = await fetch(`${DB_CONFIG.apiBase}/cart/${id}`, {
+      method: "DELETE",
+      headers: this._h(),
+    });
+    if (!res.ok) throw new Error("Không thể xóa giỏ hàng");
+    return res.json();
+  },
+
   // ── DASHBOARD STATS ──────────────────────────────────────────
   // Replace with: await (await fetch(`${DB_CONFIG.apiBase}/dashboard/stats`,{headers:this._h()})).json()
   async getDashboardStats() {

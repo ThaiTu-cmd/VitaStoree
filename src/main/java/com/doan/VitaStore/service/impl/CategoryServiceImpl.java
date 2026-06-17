@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.doan.VitaStore.dto.response.client.ShopCategoryResponse;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,6 +25,18 @@ public class CategoryServiceImpl implements CategoryService
     public List<CategoryResponse> getAllCategory() {
         return categoriesRepository.findAll().stream()
                 .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ShopCategoryResponse> getShopCategories() {
+        return categoriesRepository.findByDeletedAtIsNull().stream()
+                .map(c -> new ShopCategoryResponse(
+                        c.getCategoryId(),
+                        c.getCategoryName().toLowerCase().replaceAll("\\s+", "-"),
+                        c.getCategoryName(),
+                        c.getProducts() != null ? (int) c.getProducts().stream().filter(p -> p.getDeletedAt() == null).count() : 0
+                ))
                 .toList();
     }
 

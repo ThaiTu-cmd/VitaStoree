@@ -40,8 +40,8 @@
               margin-top: 4px;
             "
           >
-            Khám phá bộ sưu tập rượu vang thượng hạng, whisky lâu năm nhập khẩu
-            chính ngạch.
+            Khám phá bộ sưu tập thực phẩm chức năng chính hãng, nhập khẩu
+            chất lượng cao.
           </p>
         </div>
 
@@ -101,7 +101,6 @@
             <!-- Product Grid -->
             <div class="product-grid" id="product-grid">
                <div class="product-card" th:each="product : ${products}">
-                <a th:href="@{/detail(id=${product.id})}" class="product-card-link">
                 <div class="product-card-badge">
                   <span
                     class="badge badge-orange"
@@ -158,7 +157,6 @@
                     </div>
                   </div>
                 </div>
-                </a>
                 <div class="product-card-footer">
                   <button
                     class="add-to-cart-btn"
@@ -220,7 +218,7 @@
             <div class="pagination" th:if="${totalPages > 1}">
               <a
                 class="page-btn"
-                th:href="@{/shop(page=${currentPage - 1}, category=${param.category}, sort=${param.sort}, price=${param.price})}"
+                th:href="@{/shop(page=${currentPage - 1}, q=${param.q}, category=${param.category}, sort=${param.sort}, price=${param.price})}"
                 th:classappend="${currentPage <= 1} ? 'disabled'"
                 th:if="${currentPage > 1}"
                 >‹</a
@@ -228,14 +226,14 @@
               <a
                 class="page-btn"
                 th:each="i : ${#numbers.sequence(1, totalPages)}"
-                th:href="@{/shop(page=${i}, category=${param.category}, sort=${param.sort}, price=${param.price})}"
+                th:href="@{/shop(page=${i}, q=${param.q}, category=${param.category}, sort=${param.sort}, price=${param.price})}"
                 th:text="${i}"
                 th:classappend="${i == currentPage} ? 'active'"
                 >1</a
               >
               <a
                 class="page-btn"
-                th:href="@{/shop(page=${currentPage + 1}, category=${param.category}, sort=${param.sort}, price=${param.price})}"
+                th:href="@{/shop(page=${currentPage + 1}, q=${param.q}, category=${param.category}, sort=${param.sort}, price=${param.price})}"
                 th:if="${currentPage < totalPages}"
                 >›</a
               >

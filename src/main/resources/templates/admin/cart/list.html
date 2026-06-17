@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Carts — VitaStore Admin</title>
+    <link rel="stylesheet" th:href="@{/admin/css/style.css?v=1}" />
+  </head>
+  <body>
+    <div class="admin-layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-icon">🌿</div>
+          <div>
+            <div class="logo-text">VitaStore</div>
+            <div class="logo-sub">Admin Panel</div>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <div class="nav-section-label">Tổng quan</div>
+          <a class="nav-item" th:href="@{/admin}"
+            ><span class="nav-icon">🏠</span> Dashboard</a
+          >
+          <div class="nav-section-label">Quản lý đơn hàng</div>
+          <a class="nav-item" th:href="@{/admin/order/list}"
+            ><span class="nav-icon">📦</span> Orders</a
+          >
+          <a class="nav-item active" th:href="@{/admin/cart/list}"
+            ><span class="nav-icon">🛒</span> Carts</a
+          >
+          <div class="nav-section-label">Sản phẩm</div>
+          <a class="nav-item" th:href="@{/admin/product/list}"
+            ><span class="nav-icon">🛍</span> Products</a
+          >
+          <a class="nav-item" th:href="@{/admin/product/category}"
+            ><span class="nav-icon">🗂</span> Categories</a
+          >
+          <div class="nav-section-label">Người dùng</div>
+          <a class="nav-item" th:href="@{/admin/user/list}"
+            ><span class="nav-icon">👥</span> Users</a
+          >
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="admin-profile">
+            <div class="admin-avatar">A</div>
+            <div>
+              <div class="admin-name">Admin Master</div>
+              <div class="admin-role">Super Admin</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="main-wrap">
+        <header class="topbar">
+          <div class="topbar-info">
+            <div class="topbar-title">Carts</div>
+            <div class="topbar-breadcrumb">Quản lý giỏ hàng</div>
+          </div>
+          <div class="topbar-right">
+            <button class="icon-btn" title="Cài đặt" onclick="toggleLogoutDropdown()">⚙️</button>
+            <div class="dropdown-menu" id="logoutDropdown" style="display:none">
+              <button class="dropdown-item dropdown-item-logout" onclick="logout()">❌ Đăng xuất</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="page-wrap">
+          <div class="page-header">
+            <div>
+              <div class="page-title">Danh sách giỏ hàng</div>
+              <div class="page-subtitle">Quản lý giỏ hàng người dùng</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="toolbar">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="searchInput" placeholder="Tìm user..." oninput="filterCarts()" />
+                </div>
+              </div>
+              <span class="badge badge-info" id="cartCount">—</span>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Số lượng</th>
+                    <th>Tổng tiền</th>
+                    <th>Ngày tạo</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cartsBody">
+                  <tr>
+                    <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Đang tải...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div class="modal-overlay" id="cartModalOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title" id="cartModalTitle">Chi tiết giỏ hàng</div>
+          <button class="modal-close" onclick="Modal.close('cartModalOverlay')">✕</button>
+        </div>
+        <div class="modal-body" id="cartModalBody" style="max-height:60vh;overflow-y:auto">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="Modal.close('cartModalOverlay')">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE CONFIRM -->
+    <div class="modal-overlay" id="deleteModalOverlay">
+      <div class="modal modal-sm">
+        <div class="modal-body" style="padding:32px 28px 20px;text-align:center">
+          <div class="confirm-icon">🗑️</div>
+          <div class="confirm-title">Xác nhận xóa giỏ hàng</div>
+          <div class="confirm-text">
+            Bạn đang xóa giỏ hàng<br /><strong id="deleteTargetLabel"></strong>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="DeleteConfirm.hide()">Hủy</button>
+          <button class="btn btn-danger" id="confirmDeleteBtn" onclick="DeleteConfirm.confirm()">Xác nhận xóa</button>
+        </div>
+      </div>
+    </div>
+
+    <script th:src="@{/admin/js/admin.js}"></script>
+    <script>
+      let allCarts = [];
+      let currentPage = 1;
+      const PAGE_SIZE = 10;
+      let filteredCarts = [];
+
+      async function loadCarts() {
+        try {
+          const carts = await API.getCarts();
+          allCarts = carts;
+          currentPage = 1;
+          filterCarts();
+        } catch (e) {
+          Utils.toast(e.message, "error");
+        }
+      }
+
+      function filterCarts() {
+        const q = document.getElementById("searchInput").value.toLowerCase();
+        filteredCarts = allCarts.filter(
+          (c) => !q || c.userName.toLowerCase().includes(q)
+        );
+        currentPage = 1;
+        renderPage();
+      }
+
+      function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filteredCarts.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(filteredCarts.length / PAGE_SIZE) || 1;
+
+        document.getElementById("cartCount").textContent = `${filteredCarts.length} giỏ hàng`;
+        document.getElementById("cartsBody").innerHTML = filteredCarts.length
+          ? pageItems.map((c) => `
+        <tr>
+          <td class="td-mono">${c.id}</td>
+          <td><strong>${c.userName}</strong> <span class="td-mono" style="font-size:12px">(ID: ${c.userId})</span></td>
+          <td><span class="badge badge-cyan">${c.itemCount} mục</span></td>
+          <td style="font-weight:700;color:var(--primary)">${Utils.formatCurrency(c.totalAmount)}</td>
+          <td class="td-mono" style="font-size:12px;color:var(--text-muted)">${c.createdAt || "—"}</td>
+          <td>
+            <div class="action-group">
+              <button class="btn btn-sm btn-outline" onclick="viewCart(${c.id})">👁 Xem</button>
+              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${c.id},'#${c.id}')">🗑 Delete</button>
+            </div>
+          </td>
+        </tr>`).join("")
+          : `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Không có giỏ hàng</td></tr>`;
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&#8249;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>&#8250;</button>`;
+        document.getElementById("pagination").innerHTML = html;
+      }
+
+      function goToPage(page) {
+        const totalPages = Math.ceil(filteredCarts.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderPage();
+      }
+
+      async function viewCart(id) {
+        try {
+          const cart = await API.getCartById(id);
+          document.getElementById("cartModalTitle").textContent = `Giỏ hàng #${cart.id} - ${cart.userName}`;
+          document.getElementById("cartModalBody").innerHTML = cart.items.length
+            ? `<table style="width:100%;border-collapse:collapse">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border)">
+                    <th style="text-align:left;padding:8px">Sản phẩm</th>
+                    <th style="text-align:right;padding:8px">Đơn giá</th>
+                    <th style="text-align:center;padding:8px">SL</th>
+                    <th style="text-align:right;padding:8px">Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${cart.items.map(i => `
+                  <tr style="border-bottom:1px solid var(--border-light)">
+                    <td style="padding:8px">
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <img src="${i.imageUrl || '/images/placeholder.png'}" style="width:40px;height:40px;object-fit:cover;border-radius:4px" />
+                        <div>
+                          <div style="font-weight:600;font-size:13px">${i.productName}</div>
+                          <div style="font-size:11px;color:var(--text-muted)">#${i.productId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="text-align:right;padding:8px;font-size:13px">${Utils.formatCurrency(i.price)}</td>
+                    <td style="text-align:center;padding:8px;font-size:13px">${i.quantity}</td>
+                    <td style="text-align:right;padding:8px;font-weight:700;color:var(--primary);font-size:13px">${Utils.formatCurrency(i.price * i.quantity)}</td>
+                  </tr>`).join('')}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" style="text-align:right;padding:12px;font-weight:700">Tổng cộng:</td>
+                    <td style="text-align:right;padding:12px;font-weight:700;color:var(--primary);font-size:16px">${Utils.formatCurrency(cart.totalAmount)}</td>
+                  </tr>
+                </tfoot>
+              </table>`
+            : '<p style="text-align:center;padding:40px;color:var(--text-muted)">Giỏ hàng trống</p>';
+          Modal.open("cartModalOverlay");
+        } catch (e) {
+          Utils.toast(e.message, "error");
+        }
+      }
+
+      function confirmDelete(id, label) {
+        DeleteConfirm.show(label, async () => {
+          try {
+            await API.deleteCart(id);
+            allCarts = allCarts.filter((c) => c.id !== id);
+            filterCarts();
+            Utils.toast(`Đã xóa giỏ hàng #${id}`);
+          } catch (e) {
+            Utils.toast(e.message, "error");
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", loadCarts);
+    </script>
+  </body>
+</html>

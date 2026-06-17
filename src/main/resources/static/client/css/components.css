@@ -176,6 +176,118 @@
   justify-content: center;
 }
 
+/* ===== CART DROPDOWN ===== */
+.cart-wrap {
+  position: relative;
+}
+
+.cart-wrap:hover .cart-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.cart-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -60px;
+  width: 320px;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  border: 1px solid var(--color-border);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.2s ease;
+  z-index: 1000;
+}
+
+.cart-dropdown-header {
+  padding: var(--space-3) var(--space-4);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-900);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cart-dropdown-items {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: var(--space-2) 0;
+}
+
+.cart-dropdown-empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-grey-400);
+  font-size: var(--font-size-sm);
+}
+
+.cart-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  transition: var(--transition);
+}
+
+.cart-dropdown-item:hover {
+  background: var(--color-grey-100);
+}
+
+.cart-dropdown-item-img {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cart-dropdown-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-dropdown-item-name {
+  font-size: var(--font-size-sm);
+  color: var(--color-grey-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-dropdown-item-qty {
+  font-size: var(--font-size-xs);
+  color: var(--color-grey-500);
+}
+
+.cart-dropdown-item-price {
+  font-size: var(--font-size-sm);
+  color: var(--color-green);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cart-dropdown-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.cart-dropdown-total {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-grey-900);
+}
+
+.cart-dropdown-footer .btn {
+  padding: 6px 14px;
+  font-size: var(--font-size-xs);
+}
+
 .menu-toggle {
   display: none;
   flex-direction: column;

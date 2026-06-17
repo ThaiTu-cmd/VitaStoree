@@ -27,8 +27,9 @@ public class AdminDataInitializer {
                 return;
             }
 
-            UserEntity admin = userRepository.findByEmailOrPhone(email.trim(), phone.trim())
-                    .orElseGet(UserEntity::new);
+            UserEntity admin = userRepository.findByEmail(email.trim())
+                    .orElseGet(() -> userRepository.findByEmailOrPhone(email.trim(), phone.trim())
+                            .orElseGet(UserEntity::new));
 
             admin.setFullName(fullName.trim());
             admin.setEmail(email.trim());

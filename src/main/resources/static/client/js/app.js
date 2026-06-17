@@ -5,55 +5,191 @@
 
 // ===== CART STATE =====
 const Cart = (() => {
-  let items = JSON.parse(localStorage.getItem("winestore_cart") || "[]");
+  const lsKey = "vitastore_cart";
+  let items = [];
+  let isSyncing = false;
 
-  const save = () =>
-    localStorage.setItem("winestore_cart", JSON.stringify(items));
+  const isLoggedIn = () => document.querySelector('.user-dropdown') !== null;
 
-  const getCount = () => items.reduce((s, i) => s + i.qty, 0);
+  const loadLocal = () => {
+    items = JSON.parse(localStorage.getItem(lsKey) || "[]");
+  };
 
-  const add = (id, name, price, img, brand) => {
-    const existing = items.find((i) => i.id === id);
-    if (existing) {
-      existing.qty++;
-    } else {
-      items.push({ id, name, price, img, brand, qty: 1 });
+  const saveLocal = () => {
+    localStorage.setItem(lsKey, JSON.stringify(items));
+  };
+
+  const getCount = () => {
+    if (isLoggedIn()) {
+      const badge = document.querySelector(".cart-badge");
+      return badge ? parseInt(badge.textContent) || 0 : 0;
     }
-    save();
-    updateBadge();
-    Toast.show(`Đã thêm "${name}" vào giỏ hàng`, "success");
-  };
-
-  const remove = (id) => {
-    items = items.filter((i) => i.id !== id);
-    save();
-    updateBadge();
-  };
-
-  const updateQty = (id, qty) => {
-    const item = items.find((i) => i.id === id);
-    if (item) {
-      item.qty = Math.max(1, qty);
-      save();
-    }
-  };
-
-  const getTotal = () => items.reduce((s, i) => s + i.price * i.qty, 0);
-
-  const getItems = () => [...items];
-
-  const clear = () => {
-    items = [];
-    save();
-    updateBadge();
+    return items.reduce((s, i) => s + i.qty, 0);
   };
 
   const updateBadge = () => {
+    if (isLoggedIn()) {
+      fetchCartFromApi();
+      return;
+    }
     document.querySelectorAll(".cart-badge").forEach((el) => {
-      const c = getCount();
+      const c = items.reduce((s, i) => s + i.qty, 0);
       el.textContent = c;
       el.style.display = c > 0 ? "flex" : "none";
     });
+  };
+
+  const fetchCartFromApi = () => {
+    fetch("/VitaStore/api/cart")
+      .then((r) => r.json())
+      .then((data) => {
+        const totalItems = data.items
+          ? data.items.reduce((s, i) => s + i.quantity, 0)
+          : 0;
+        document.querySelectorAll(".cart-badge").forEach((el) => {
+          el.textContent = totalItems;
+          el.style.display = totalItems > 0 ? "flex" : "none";
+        });
+      })
+      .catch(() => {});
+  };
+
+  const add = (id, name, price, img, brand) => {
+    if (isLoggedIn()) {
+      return fetch("/VitaStore/api/cart/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: parseInt(id), quantity: 1 }),
+      })
+        .then((r) => {
+          if (r.ok) {
+            fetchCartFromApi();
+            Toast.show(`Đã thêm "${name}" vào giỏ hàng`, "success");
+          }
+          return r;
+        })
+        .catch((err) => {
+          Toast.show("Lỗi khi thêm vào giỏ hàng", "error");
+          throw err;
+        });
+    } else {
+      const existing = items.find((i) => i.id === id);
+      if (existing) {
+        existing.qty++;
+      } else {
+        items.push({ id, name, price, img, brand, qty: 1 });
+      }
+      saveLocal();
+      updateBadge();
+      Toast.show(`Đã thêm "${name}" vào giỏ hàng`, "success");
+      return Promise.resolve();
+    }
+  };
+
+  const remove = (id) => {
+    if (isLoggedIn()) {
+      return fetch(`/VitaStore/api/cart/items/${id}`, { method: "DELETE" })
+        .then((r) => {
+          if (r.ok) fetchCartFromApi();
+          return r;
+        })
+        .catch((err) => {
+          Toast.show("Lỗi khi xóa sản phẩm", "error");
+          throw err;
+        });
+    } else {
+      items = items.filter((i) => i.id !== id);
+      saveLocal();
+      updateBadge();
+      return Promise.resolve();
+    }
+  };
+
+  const updateQty = (id, qty) => {
+    if (isLoggedIn()) {
+      return fetch(`/VitaStore/api/cart/items/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity: Math.max(1, qty) }),
+      })
+        .then((r) => {
+          if (r.ok) fetchCartFromApi();
+          return r;
+        })
+        .catch((err) => {
+          Toast.show("Lỗi khi cập nhật số lượng", "error");
+          throw err;
+        });
+    } else {
+      const item = items.find((i) => i.id === id);
+      if (item) {
+        item.qty = Math.max(1, qty);
+        saveLocal();
+      }
+      return Promise.resolve();
+    }
+  };
+
+  const getTotal = () => {
+    if (isLoggedIn()) return 0;
+    return items.reduce((s, i) => s + i.price * i.qty, 0);
+  };
+
+  const getItems = () => {
+    if (isLoggedIn()) return [];
+    return [...items];
+  };
+
+  const clear = () => {
+    if (isLoggedIn()) {
+      fetch("/VitaStore/api/cart", { method: "DELETE" })
+        .then((r) => { if (r.ok) fetchCartFromApi(); })
+        .catch(() => Toast.show("Lỗi khi xóa giỏ hàng", "error"));
+    } else {
+      items = [];
+      saveLocal();
+      updateBadge();
+    }
+  };
+
+  const syncLocalToApi = () => {
+    if (isSyncing) return;
+    const localItems = JSON.parse(localStorage.getItem(lsKey) || "[]");
+    if (localItems.length === 0) {
+      loadLocal();
+      fetchCartFromApi();
+      return;
+    }
+
+    isSyncing = true;
+    const payload = localItems.map((i) => ({
+      productId: parseInt(i.id),
+      quantity: i.qty,
+    }));
+
+    fetch("/VitaStore/api/cart/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((r) => {
+        if (r.ok) {
+          localStorage.removeItem(lsKey);
+          loadLocal();
+          fetchCartFromApi();
+        }
+      })
+      .catch(() => fetchCartFromApi())
+      .finally(() => { isSyncing = false; });
+  };
+
+  const init = () => {
+    loadLocal();
+    if (isLoggedIn()) {
+      syncLocalToApi();
+    } else {
+      updateBadge();
+    }
   };
 
   return {
@@ -65,7 +201,87 @@ const Cart = (() => {
     getCount,
     clear,
     updateBadge,
+    init,
+    fetchCartFromApi,
+    isLoggedIn,
   };
+})();
+
+// ===== CART DROPDOWN =====
+const CartDropdown = (() => {
+  const update = () => {
+    const dropdown = document.getElementById("cartDropdownItems");
+    const totalEl = document.getElementById("cartDropdownTotal");
+    if (!dropdown) return;
+
+    if (Cart.isLoggedIn()) {
+      fetch("/VitaStore/api/cart")
+        .then((r) => r.json())
+        .then((data) => {
+          const mappedItems = (data.items || []).map((i) => ({
+            name: i.productName,
+            price: i.price,
+            qty: i.quantity,
+            img: i.imageUrl || "/images/placeholder.png",
+          }));
+          renderItems(mappedItems, data.totalAmount || 0);
+        })
+        .catch(() => {});
+    } else {
+      const items = Cart.getItems();
+      const total = Cart.getTotal();
+      renderItems(items, total);
+    }
+  };
+
+  const renderItems = (items, total) => {
+    const dropdown = document.getElementById("cartDropdownItems");
+    const totalEl = document.getElementById("cartDropdownTotal");
+    if (!dropdown) return;
+
+    if (items.length === 0) {
+      dropdown.innerHTML =
+        '<div class="cart-dropdown-empty">Chưa có sản phẩm</div>';
+      if (totalEl) totalEl.textContent = "Tổng: 0₫";
+      return;
+    }
+
+    dropdown.innerHTML = items
+      .map(
+        (item) => `
+      <div class="cart-dropdown-item">
+        <img class="cart-dropdown-item-img" src="${item.img || "/images/placeholder.png"}" alt="${item.name}">
+        <div class="cart-dropdown-item-info">
+          <div class="cart-dropdown-item-name">${item.name}</div>
+          <div class="cart-dropdown-item-qty">SL: ${item.qty}</div>
+        </div>
+        <div class="cart-dropdown-item-price">${formatCurrency(item.price * item.qty)}</div>
+      </div>
+    `,
+      )
+      .join("");
+
+    if (totalEl) totalEl.textContent = `Tổng: ${formatCurrency(total)}`;
+  };
+
+  const formatCurrency = (value) => {
+    if (typeof value === "number") {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+      }).format(value);
+    }
+    return value + "₫";
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const wrap = document.querySelector(".cart-wrap");
+    if (wrap) {
+      wrap.addEventListener("mouseenter", update);
+    }
+  });
+
+  return { update };
 })();
 
 // ===== TOAST =====
@@ -243,22 +459,12 @@ const QtyControl = (() => {
     document.addEventListener("click", (e) => {
       if (e.target.closest(".qty-btn")) {
         const btn = e.target.closest(".qty-btn");
-        const input = btn.parentElement.querySelector(
-          ".qty-input, .detail-qty-num",
-        );
+        const input = btn.parentElement.querySelector(".qty-input");
         if (!input) return;
         let val = parseInt(input.value) || 1;
         val = btn.dataset.action === "minus" ? Math.max(1, val - 1) : val + 1;
         input.value = val;
         input.dispatchEvent(new Event("change"));
-      }
-      if (e.target.closest(".detail-qty-btn")) {
-        const btn = e.target.closest(".detail-qty-btn");
-        const input = btn.parentElement.querySelector(".detail-qty-num");
-        if (!input) return;
-        let val = parseInt(input.value) || 1;
-        val = btn.dataset.action === "minus" ? Math.max(1, val - 1) : val + 1;
-        input.value = val;
       }
     });
   };
@@ -280,37 +486,6 @@ const initAddToCartButtons = () => {
     // Animate button
     btn.classList.add("adding");
     setTimeout(() => btn.classList.remove("adding"), 800);
-  });
-};
-
-// ===== DETAIL PAGE TABS =====
-const initDetailTabs = () => {
-  document.querySelectorAll(".detail-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      document
-        .querySelectorAll(".detail-tab")
-        .forEach((t) => t.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((c) => c.classList.remove("active"));
-      tab.classList.add("active");
-      const target = document.querySelector(`#${tab.dataset.tab}`);
-      if (target) target.classList.add("active");
-    });
-  });
-};
-
-// ===== GALLERY THUMBS =====
-const initGallery = () => {
-  document.querySelectorAll(".thumb-img").forEach((thumb) => {
-    thumb.addEventListener("click", () => {
-      document
-        .querySelectorAll(".thumb-img")
-        .forEach((t) => t.classList.remove("active"));
-      thumb.classList.add("active");
-      const mainImg = document.querySelector(".main-image img");
-      if (mainImg && thumb.dataset.src) mainImg.src = thumb.dataset.src;
-    });
   });
 };
 
@@ -357,13 +532,11 @@ const initPaymentOptions = () => {
 
 // ===== INIT ALL =====
 document.addEventListener("DOMContentLoaded", () => {
-  Cart.updateBadge();
+  Cart.init();
   ContactBubble.init();
   ShopFilter.init();
   QtyControl.init();
   initAddToCartButtons();
-  initDetailTabs();
-  initGallery();
   initCheckoutGuard();
   initPaymentOptions();
 });

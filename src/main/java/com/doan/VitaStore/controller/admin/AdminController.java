@@ -1,12 +1,15 @@
 package com.doan.VitaStore.controller.admin;
 
+import com.doan.VitaStore.dto.request.admin.CartRequest;
 import com.doan.VitaStore.dto.request.admin.CategoryRequest;
 import com.doan.VitaStore.dto.request.admin.ProductRequest;
 import com.doan.VitaStore.dto.request.admin.UserRequest;
+import com.doan.VitaStore.dto.response.admin.CartResponse;
 import com.doan.VitaStore.dto.response.admin.CategoryResponse;
 import com.doan.VitaStore.dto.response.admin.ProductResponse;
 import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.exception.UserNotFoundException;
+import com.doan.VitaStore.service.CartService;
 import com.doan.VitaStore.service.CategoryService;
 import com.doan.VitaStore.service.ProductService;
 import com.doan.VitaStore.service.UserService;
@@ -30,6 +33,9 @@ public class AdminController {
 
     @Autowired
     private ProductService productService;
+
+    @Autowired
+    private CartService cartService;
 
     @GetMapping({"", "/index"})
     public String dashboard() {
@@ -59,6 +65,11 @@ public class AdminController {
     @GetMapping("/product/add")
     public String productAdd() {
         return "admin/product/add";
+    }
+
+    @GetMapping("/cart/list")
+    public String cartList() {
+        return "admin/cart/list";
     }
 
     @GetMapping("/order/list")
@@ -225,6 +236,67 @@ public class AdminController {
         try {
             ProductResponse restored = productService.restoreProduct(id);
             return ResponseEntity.ok(restored);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ── CARTS ──────────────────────────────────────────────────
+
+    @GetMapping("/cart/all")
+    public ResponseEntity<List<CartResponse>> getAllCarts() {
+        return ResponseEntity.ok(cartService.getAllCarts());
+    }
+
+    @GetMapping("/cart/{id}")
+    public ResponseEntity<?> getCartById(@PathVariable int id) {
+        try {
+            CartResponse cart = cartService.getCartById(id);
+            return ResponseEntity.ok(cart);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/cart/{id}/items")
+    public ResponseEntity<?> addItemToCart(@PathVariable int id, @RequestBody CartRequest request) {
+        try {
+            CartResponse updated = cartService.addItemToCart(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/cart/{cartId}/items/{itemId}")
+    public ResponseEntity<?> updateItemQuantity(@PathVariable int cartId, @PathVariable int itemId,
+                                                  @RequestBody Map<String, Integer> body) {
+        try {
+            int quantity = body.getOrDefault("quantity", 1);
+            CartResponse updated = cartService.updateItemQuantity(cartId, itemId, quantity);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/cart/{cartId}/items/{itemId}")
+    public ResponseEntity<?> removeItemFromCart(@PathVariable int cartId, @PathVariable int itemId) {
+        try {
+            cartService.removeItemFromCart(cartId, itemId);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa mục khỏi giỏ hàng"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/cart/{id}")
+    public ResponseEntity<?> deleteCart(@PathVariable int id) {
+        try {
+            cartService.deleteCart(id);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa giỏ hàng"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
