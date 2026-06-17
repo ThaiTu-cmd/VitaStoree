@@ -23,4 +23,8 @@ public interface UserService {
 
     void deleteUserById(int id);
     UserResponse restoreUserById(int id);
+
+    UserResponse updateProfile(int userId, String fullName, String phone);
+    UserResponse changePassword(int userId, String currentPassword, String newPassword);
+    boolean verifyPassword(int userId, String rawPassword);
 }

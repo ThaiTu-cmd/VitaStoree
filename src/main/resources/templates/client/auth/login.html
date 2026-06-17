@@ -122,9 +122,9 @@
           <p class="auth-subtitle">Đăng nhập để tiếp tục mua sắm</p>
         </div>
 
-        <!-- Error message -->
+        <!-- Error: email not found -->
         <div
-          th:if="${param.error}"
+          th:if="${param.error != null && param.error[0] == 'email_not_found'}"
           class="auth-alert"
         >
           <svg
@@ -139,12 +139,32 @@
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span th:text="${error}">Sai tên đăng nhập hoặc mật khẩu.</span>
+          <span>Email chưa được đăng ký. <a th:href="@{/auth/register}" style="color:var(--color-green);font-weight:600">Đăng ký ngay</a></span>
         </div>
 
-        <!-- Success message -->
+        <!-- Error: wrong password -->
         <div
-          th:if="${param.success}"
+          th:if="${param.error != null && param.error[0] == 'wrong_password'}"
+          class="auth-alert"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>Mật khẩu không đúng.</span>
+        </div>
+
+        <!-- Success message (registration redirect) -->
+        <div
+          th:if="${success}"
           class="auth-alert auth-alert-success"
         >
           <svg

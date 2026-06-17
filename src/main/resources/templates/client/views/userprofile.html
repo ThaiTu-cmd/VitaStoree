@@ -48,6 +48,14 @@
               <i class="ti ti-alert-circle"></i> <span th:text="${profileError}">Lỗi</span>
               <div class="notify-bar"></div>
             </div>
+            <div th:if="${passwordSuccess != null}" class="notify notify-success">
+              <i class="ti ti-check-circle"></i> <span th:text="${passwordSuccess}">Thành công</span>
+              <div class="notify-bar"></div>
+            </div>
+            <div th:if="${passwordError != null}" class="notify notify-error">
+              <i class="ti ti-alert-circle"></i> <span th:text="${passwordError}">Lỗi</span>
+              <div class="notify-bar"></div>
+            </div>
             <form th:action="@{/userprofile/update}" method="post">
               <div class="field-group">
                 <label class="field-label">Họ và tên</label>
@@ -94,25 +102,20 @@
         </div>
         <form th:action="@{/userprofile/change-password}" method="post">
           <div class="modal-body">
-            <div th:if="${passwordSuccess != null}" class="notify notify-success" style="margin-bottom:var(--space-4)">
-              <i class="ti ti-check-circle"></i> <span th:text="${passwordSuccess}">Thành công</span>
-              <div class="notify-bar"></div>
-            </div>
-            <div th:if="${passwordError != null}" class="notify notify-error" style="margin-bottom:var(--space-4)">
-              <i class="ti ti-alert-circle"></i> <span th:text="${passwordError}">Lỗi</span>
-              <div class="notify-bar"></div>
-            </div>
             <div class="form-group">
               <label class="form-label">Mật khẩu hiện tại</label>
-              <input class="form-control" type="password" name="currentPassword" required placeholder="Nhập mật khẩu hiện tại" />
+              <input class="form-control" type="password" name="currentPassword" id="currentPassword" required placeholder="Nhập mật khẩu hiện tại" />
+              <span id="currentPwStatus" style="font-size:12px;margin-top:4px;display:block"></span>
             </div>
             <div class="form-group">
               <label class="form-label">Mật khẩu mới</label>
-              <input class="form-control" type="password" name="newPassword" required placeholder="Ít nhất 8 ký tự" />
+              <input class="form-control" type="password" name="newPassword" id="newPassword" required placeholder="Ít nhất 8 ký tự" />
+              <span id="newPwStatus" style="font-size:12px;margin-top:4px;display:block"></span>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Xác nhận mật khẩu mới</label>
-              <input class="form-control" type="password" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới" />
+              <input class="form-control" type="password" name="confirmPassword" id="confirmPassword" required placeholder="Nhập lại mật khẩu mới" />
+              <span id="confirmPwStatus" style="font-size:12px;margin-top:4px;display:block"></span>
             </div>
           </div>
           <div class="modal-footer">
@@ -130,10 +133,9 @@
     <script>
       function openModal(id) { document.getElementById(id).classList.add('open'); }
       function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-      document.querySelectorAll('.modal-backdrop').forEach(function(m) {
-        m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('open'); });
-      });
+      /* close only via X button — no click-outside */
 
+      /* ── notification auto-fade ── */
       document.querySelectorAll('.notify').forEach(function(n) {
         var bar = n.querySelector('.notify-bar');
         if (bar) {
@@ -146,6 +148,57 @@
           setTimeout(function() { n.remove(); }, 400);
         }, 3000);
       });
+
+      /* ── real‑time password validation ── */
+      var ctx = document.body.dataset.contextPath || window.location.pathname.split('/userprofile')[0] || '';
+
+      function debounce(fn, ms) { var t; return function() { clearTimeout(t); var a = arguments, s = this; t = setTimeout(function() { fn.apply(s, a); }, ms); }; }
+
+      /* current password -> AJAX */
+      var currPw = document.getElementById('currentPassword');
+      var currStatus = document.getElementById('currentPwStatus');
+      if (currPw) {
+        currPw.addEventListener('input', debounce(function() {
+          var val = this.value;
+          if (!val) { currStatus.innerHTML = ''; return; }
+          fetch(ctx + '/api/user/verify-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'password=' + encodeURIComponent(val)
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            currStatus.innerHTML = data.valid
+              ? '<span style="color:green">✓ Mật khẩu chính xác</span>'
+              : '<span style="color:red">✗ Mật khẩu không đúng</span>';
+          })
+          .catch(function() { currStatus.innerHTML = ''; });
+        }, 400));
+      }
+
+      /* new password — chỉ trigger checkMatch khi nhập */
+      var newPw = document.getElementById('newPassword');
+      var newStatus = document.getElementById('newPwStatus');
+      if (newPw) {
+        newPw.addEventListener('input', function() {
+          checkMatch();
+        });
+      }
+
+      /* confirm match */
+      var confirmPw = document.getElementById('confirmPassword');
+      var confirmStatus = document.getElementById('confirmPwStatus');
+      function checkMatch() {
+        if (!confirmPw || !newPw) return;
+        var c = confirmPw.value, n = newPw.value;
+        if (!c) { confirmStatus.innerHTML = ''; return; }
+        confirmStatus.innerHTML = c === n
+          ? '<span style="color:green">✓ Khớp</span>'
+          : '<span style="color:red">✗ Không khớp</span>';
+      }
+      if (confirmPw) {
+        confirmPw.addEventListener('input', checkMatch);
+      }
     </script>
   </body>
 </html>

@@ -23,7 +23,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Map;
 
 @Controller
 public class ClientController {
@@ -194,6 +197,54 @@ public class ClientController {
         return "redirect:/address";
     }
 
+    @PostMapping("/userprofile/update")
+    public String updateProfile(
+            @RequestParam("fullName") String fullName,
+            @RequestParam("email") String email,
+            @RequestParam(value = "phone", required = false) String phone,
+            RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null) return "redirect:/auth/login";
+        try {
+            if (!email.equals(user.getEmail()) && userService.existsByEmail(email)) {
+                throw new IllegalArgumentException("Email đã được sử dụng");
+            }
+            userService.updateProfile(user.getUserId(), fullName, phone);
+            ra.addFlashAttribute("profileSuccess", "Cập nhật thông tin thành công!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("profileError", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/userprofile";
+    }
+
+    @PostMapping("/userprofile/change-password")
+    public String changePassword(
+            @RequestParam("currentPassword") String currentPassword,
+            @RequestParam("newPassword") String newPassword,
+            @RequestParam("confirmPassword") String confirmPassword,
+            RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null) return "redirect:/auth/login";
+        try {
+            if (!newPassword.equals(confirmPassword)) {
+                throw new IllegalArgumentException("Mật khẩu xác nhận không khớp");
+            }
+            userService.changePassword(user.getUserId(), currentPassword, newPassword);
+            ra.addFlashAttribute("passwordSuccess", "Đổi mật khẩu thành công!");
+        } catch (Exception e) {
+            ra.addFlashAttribute("passwordError", "Lỗi: " + e.getMessage());
+        }
+        return "redirect:/userprofile";
+    }
+
+    @PostMapping("/api/user/verify-password")
+    @ResponseBody
+    public Map<String, Boolean> verifyPassword(@RequestParam("password") String password) {
+        UserEntity user = getCurrentUser();
+        boolean valid = user != null && userService.verifyPassword(user.getUserId(), password);
+        return Map.of("valid", valid);
+    }
+
     private void addUserToModel(Model model) {
         UserEntity user = getCurrentUser();
         if (user != null) model.addAttribute("user", user);
@@ -220,6 +271,11 @@ public class ClientController {
     @GetMapping("/blog")
     public String blog() {
         return "client/views/shop";
+    }
+
+    @GetMapping({"/auth", "/auth/"})
+    public String authRedirect() {
+        return "redirect:/auth/login";
     }
 
     @GetMapping("/auth/login")
@@ -275,7 +331,7 @@ public class ClientController {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        redirectAttributes.addAttribute("success", "Đăng ký thành công! Chào mừng bạn đến với VitaStore.");
+        redirectAttributes.addFlashAttribute("success", "Đăng ký thành công! Chào mừng bạn đến với VitaStore.");
         return "redirect:/auth/login";
     }
 }
