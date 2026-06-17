@@ -201,15 +201,15 @@
                 (o) => `
         <tr>
           <td class="td-mono">#${o.id}</td>
-          <td class="td-mono"><strong>${o.order_code}</strong></td>
+          <td class="td-mono"><strong>${o.orderCode}</strong></td>
           <td>${o.username}</td>
-          <td class="td-mono">${o.user_id}</td>
+          <td class="td-mono">${o.userId}</td>
           <td style="font-weight:700;color:var(--primary)">${Utils.formatCurrency(o.total)}</td>
           <td>${Utils.statusBadge(o.status)}</td>
           <td>
             <div class="action-group">
-              <a th:href="@{/admin/order/detail}?id=${o.id}" class="btn btn-sm btn-outline">👁 View</a>
-              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${o.id},'${o.order_code}')">🗑</button>
+              <a href="${APP_CONTEXT_PATH}/admin/order/detail?id=${o.id}" class="btn btn-sm btn-outline">👁 View</a>
+              <button class="btn btn-sm btn-danger" onclick="confirmDelete(${o.id},'${o.orderCode}')">🗑</button>
             </div>
           </td>
         </tr>`,
@@ -225,7 +225,7 @@
           allOrders.filter(
             (o) =>
               (!q ||
-                o.order_code.toLowerCase().includes(q) ||
+                o.orderCode.toLowerCase().includes(q) ||
                 o.username.toLowerCase().includes(q)) &&
               (!st || o.status === st),
           ),

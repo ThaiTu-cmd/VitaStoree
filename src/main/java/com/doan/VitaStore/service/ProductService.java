@@ -2,7 +2,6 @@ package com.doan.VitaStore.service;
 
 import com.doan.VitaStore.dto.request.admin.ProductRequest;
 import com.doan.VitaStore.dto.response.admin.ProductResponse;
-import com.doan.VitaStore.dto.response.client.ShopCategoryResponse;
 import com.doan.VitaStore.dto.response.client.ShopProductResponse;
 import org.springframework.data.domain.Page;
 

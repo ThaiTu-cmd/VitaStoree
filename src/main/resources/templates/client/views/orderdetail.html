@@ -21,9 +21,9 @@
     <div class="page-wrapper">
       <aside class="sidebar">
         <div class="sidebar-user-card">
-          <div class="sidebar-avatar" th:text="${session.user != null ? session.user.name.substring(0,1).toUpperCase() : 'U'}">U</div>
-          <div class="sidebar-username" th:text="${session.user.name}">Người dùng</div>
-          <div class="sidebar-email" th:text="${session.user.email}">email@example.com</div>
+          <div class="sidebar-avatar" th:text="${user != null ? user.fullName.substring(0,1).toUpperCase() : 'U'}">U</div>
+          <div class="sidebar-username" th:text="${user.fullName}">Người dùng</div>
+          <div class="sidebar-email" th:text="${user.email}">email@example.com</div>
         </div>
         <nav class="sidebar-nav">
           <div class="sidebar-nav-group">
@@ -55,8 +55,8 @@
             <div class="detail-order-date" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</div>
           </div>
           <div class="detail-top-status">
-            <span class="order-status" th:classappend="'order-status-' + ${order.status.toLowerCase()}" th:text="${order.status == 'pending' ? 'Chờ xác nhận' : order.status == 'processing' ? 'Xác nhận' : order.status == 'shipping' ? 'Đang giao' : order.status == 'completed' ? 'Hoàn thành' : order.status == 'cancelled' ? 'Đã hủy' : order.status}">Chờ xác nhận</span>
-            <span class="order-payment" th:classappend="${order.paymentStatus.name() == 'PAID' ? 'payment-paid' : 'payment-unpaid'}" th:text="${order.paymentStatus.name() == 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}">UNPAID</span>
+            <span class="order-status" th:classappend="'order-status-' + ${order.status.name().toLowerCase()}" th:text="${order.status.name() == 'PENDING' ? 'Chờ xác nhận' : order.status.name() == 'CONFIRMED' ? 'Xác nhận' : order.status.name() == 'SHIPPING' ? 'Đang giao' : order.status.name() == 'COMPLETED' ? 'Hoàn thành' : order.status.name() == 'CANCELLED' ? 'Đã hủy' : order.status.name()}">Chờ xác nhận</span>
+            <span class="order-payment" th:classappend="${order.paymentStatus.name() == 'SUCCESS' ? 'payment-paid' : 'payment-unpaid'}" th:text="${order.paymentStatus.name() == 'SUCCESS' ? 'Đã thanh toán' : 'Chưa thanh toán'}">UNPAID</span>
           </div>
         </div>
 
@@ -72,25 +72,13 @@
                   <img class="detail-product-img" th:src="${productImages.containsKey(item.productId) ? productImages.get(item.productId) : '/client/images/placeholder.svg'}" alt="" onerror="this.src='/client/images/placeholder.svg'" />
                   <div class="detail-product-info">
                     <div class="detail-product-name" th:text="${item.productName}">Rượu vang</div>
-                    <div class="detail-product-sku" th:if="${item.productSku != null}" th:text="'Mã: ' + ${item.productSku}">SKU</div>
+                    <div class="detail-product-sku" th:if="${item.productSku != null}"></div>
                   </div>
                   <div class="detail-product-qty" th:text="'x' + ${item.quantity}">x1</div>
                   <div class="detail-product-price" th:text="${#numbers.formatInteger(item.lineTotal, 1, 'COMMA') + 'đ'}">0đ</div>
                 </div>
               </div>
               <div class="detail-card-totals">
-                <div class="detail-total-row">
-                  <span>Tạm tính</span>
-                  <span th:text="${#numbers.formatInteger(order.subtotal, 1, 'COMMA') + 'đ'}">0đ</span>
-                </div>
-                <div class="detail-total-row" th:if="${order.discountAmount != null and order.discountAmount.compareTo(0) > 0}">
-                  <span>Giảm giá</span>
-                  <span style="color:var(--color-danger)" th:text="'-' + ${#numbers.formatInteger(order.discountAmount, 1, 'COMMA') + 'đ'}">0đ</span>
-                </div>
-                <div class="detail-total-row">
-                  <span>Phí vận chuyển</span>
-                  <span th:text="${order.shippingFee != null and order.shippingFee.compareTo(0) == 0 ? 'Miễn phí' : #numbers.formatInteger(order.shippingFee, 1, 'COMMA') + 'đ'}">0đ</span>
-                </div>
                 <div class="detail-total-row detail-total-grand">
                   <span>Tổng cộng</span>
                   <span th:text="${#numbers.formatInteger(order.totalAmount, 1, 'COMMA') + 'đ'}">0đ</span>
@@ -103,12 +91,11 @@
               <div class="detail-card-title"><i class="ti ti-timeline"></i> Lịch sử đơn hàng</div>
               <div class="detail-card-body">
                 <div class="timeline">
-                  <div th:each="h : ${history}" th:if="${h.changedNote != null}" class="timeline-item">
-                    <div class="timeline-dot" th:classappend="${h.newStatus == 'cancelled' ? 'cancelled' : 'active'}"></div>
+                  <div th:each="h : ${history}" class="timeline-item">
+                    <div class="timeline-dot active"></div>
                     <div class="timeline-status">
-                      <span th:text="${h.changedNote}">pending</span>
+                      <span th:text="${h}">pending</span>
                     </div>
-                    <div class="timeline-time" th:if="${h.changedAt != null}" th:text="${#temporals.format(h.changedAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</div>
                   </div>
                 </div>
               </div>
@@ -123,15 +110,14 @@
                 <dl class="detail-info-grid">
                   <dt>Phương thức</dt>
                   <dd th:text="${shipping != null ? shipping.name : 'Đang cập nhật'}">Giao hàng tiêu chuẩn</dd>
-                  <dt>Mã vận đơn</dt>
-                  <dd>
-                    <span th:if="${order.status.toLowerCase() == 'processing' or order.status.toLowerCase() == 'shipping' or order.status.toLowerCase() == 'delivered' or order.status.toLowerCase() == 'completed'}" class="tracking-code">
-                      <i class="ti ti-barcode"></i>
-                      <span th:if="${order.note != null and order.note.contains('#')}" th:text="${#strings.substringAfter(order.note, '#')}">GH001</span>
-                      <span th:if="${order.note == null or !order.note.contains('#')}">Đang cập nhật</span>
-                    </span>
-                    <span th:if="${order.status.toLowerCase() == 'pending'}" style="color:var(--color-text-muted);font-size:0.85rem">Chờ xác nhận</span>
-                  </dd>
+                    <dt>Mã vận đơn</dt>
+                    <dd>
+                      <span th:if="${order.status.name() == 'CONFIRMED' or order.status.name() == 'SHIPPING' or order.status.name() == 'COMPLETED'}" class="tracking-code">
+                        <i class="ti ti-barcode"></i>
+                        <span>Đang cập nhật</span>
+                      </span>
+                      <span th:if="${order.status.name() == 'PENDING'}" style="color:var(--color-text-muted);font-size:0.85rem">Chờ xác nhận</span>
+                    </dd>
                 </dl>
               </div>
             </div>
@@ -142,11 +128,11 @@
                 <form th:action="@{/orders/{id}/update(id=${order.id})}" method="post">
                   <dl class="detail-info-grid">
                     <dt>Họ tên</dt>
-                    <dd><input class="detail-input" type="text" name="recipientName" th:value="${order.recipientName}" th:disabled="${order.status.toLowerCase() != 'pending'}" required /></dd>
+                    <dd><input class="detail-input" type="text" name="receiverName" th:value="${order.receiverName}" th:disabled="${order.status.name() != 'PENDING'}" required /></dd>
                     <dt>Số điện thoại</dt>
-                    <dd><input class="detail-input" type="text" name="recipientPhone" th:value="${order.recipientPhone}" th:disabled="${order.status.toLowerCase() != 'pending'}" required /></dd>
+                    <dd><input class="detail-input" type="text" name="receiverPhone" th:value="${order.receiverPhone}" th:disabled="${order.status.name() != 'PENDING'}" required /></dd>
                   </dl>
-                  <button type="submit" class="detail-btn detail-btn-primary" style="width:100%;margin-top:12px" th:if="${order.status.toLowerCase() == 'pending'}"><i class="ti ti-device-floppy"></i> Lưu thay đổi</button>
+                  <button type="submit" class="detail-btn detail-btn-primary" style="width:100%;margin-top:12px" th:if="${order.status.name() == 'PENDING'}"><i class="ti ti-device-floppy"></i> Lưu thay đổi</button>
                 </form>
               </div>
             </div>
@@ -154,24 +140,23 @@
             <div class="detail-card">
               <div class="detail-card-title"><i class="ti ti-map-pin"></i> Địa chỉ nhận hàng</div>
               <div class="detail-card-body">
-                <dl class="detail-info-grid">
-                  <dt>Địa chỉ</dt>
-                  <dd>
-                    <span th:text="${order.shippingAddressLine1}">Số 123</span>
-                    <span th:if="${order.shippingAddressLine2 != null and !order.shippingAddressLine2.isEmpty()}" th:text="', ' + ${order.shippingAddressLine2}"></span>
-                  </dd>
-                  <dt th:if="${order.shippingCity != null and !order.shippingCity.isEmpty()}">Thành phố</dt>
-                  <dd th:if="${order.shippingCity != null and !order.shippingCity.isEmpty()}" th:text="${order.shippingCity}">Hà Nội</dd>
-                  <dt th:if="${order.shippingProvince != null and !order.shippingProvince.isEmpty()}">Tỉnh</dt>
-                  <dd th:if="${order.shippingProvince != null and !order.shippingProvince.isEmpty()}" th:text="${order.shippingProvince}">Hà Nội</dd>
-                </dl>
+                  <dl class="detail-info-grid">
+                    <dt>Địa chỉ</dt>
+                    <dd th:text="${order.streetAddress}">Số 123</dd>
+                    <dt>Phường/Xã</dt>
+                    <dd th:text="${order.ward}">Phường</dd>
+                    <dt>Quận/Huyện</dt>
+                    <dd th:text="${order.district}">Quận</dd>
+                    <dt>Tỉnh/Thành phố</dt>
+                    <dd th:text="${order.province}">Tỉnh</dd>
+                  </dl>
               </div>
             </div>
 
             <div class="detail-actions">
               <a th:href="@{/orders}" class="detail-btn" style="flex:1"><i class="ti ti-arrow-left"></i> Quay lại</a>
-              <button type="button" class="detail-btn detail-btn-receive" style="flex:1" th:if="${order.status.toLowerCase() == 'processing' or order.status.toLowerCase() == 'shipping'}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showReceiveConfirm(this)"><i class="ti ti-check"></i> Đã nhận hàng</button>
-              <button type="button" class="detail-btn detail-btn-cancel" style="flex:1" th:if="${order.status.toLowerCase() != 'completed' and order.status.toLowerCase() != 'cancelled' and order.status.toLowerCase() != 'shipping'}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showCancelConfirm(this)"><i class="ti ti-ban"></i> Hủy đơn</button>
+              <button type="button" class="detail-btn detail-btn-receive" style="flex:1" th:if="${order.status.name() == 'CONFIRMED' or order.status.name() == 'SHIPPING'}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showReceiveConfirm(this)"><i class="ti ti-check"></i> Đã nhận hàng</button>
+              <button type="button" class="detail-btn detail-btn-cancel" style="flex:1" th:if="${order.status.name() != 'COMPLETED' and order.status.name() != 'CANCELLED' and order.status.name() != 'SHIPPING'}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showCancelConfirm(this)"><i class="ti ti-ban"></i> Hủy đơn</button>
             </div>
           </div>
 

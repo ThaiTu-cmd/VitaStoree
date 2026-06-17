@@ -1,6 +1,7 @@
 package com.doan.VitaStore.security.controller;
 
 import com.doan.VitaStore.enums.Role;
+import com.doan.VitaStore.security.SecurityConfig;
 import com.doan.VitaStore.security.dto.AdminAuthResponse;
 import com.doan.VitaStore.security.dto.AdminLoginRequest;
 import com.doan.VitaStore.security.service.UserDetailsImpl;
@@ -14,7 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,7 +35,7 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody AdminLoginRequest loginRequest, HttpServletRequest request) {
         if (loginRequest.getUsername() == null || loginRequest.getPassword() == null
                 || loginRequest.getUsername().isBlank() || loginRequest.getPassword().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Vui long nhap day du thong tin dang nhap."));
+            return ResponseEntity.badRequest().body(Map.of("message", "Vui lòng nhập đầy đủ thông tin đăng nhập."));
         }
 
         try {
@@ -46,30 +46,33 @@ public class AuthController {
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             if (userDetails.getAuthorities().stream().noneMatch(a -> a.getAuthority().equals("ROLE_" + Role.ADMIN.name()))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body(Map.of("message", "Tai khoan khong co quyen truy cap trang quan tri."));
+                        .body(Map.of("message", "Tài khoản không có quyền truy cập trang quản trị."));
             }
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
             HttpSession session = request.getSession(true);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
             session.setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+                SecurityConfig.ADMIN_CTX_KEY,
                 SecurityContextHolder.getContext()
             );
 
             return ResponseEntity.ok(new AdminAuthResponse(userDetails.getUsername()));
         } catch (BadCredentialsException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Ten dang nhap hoac mat khau khong dung."));
+                    .body(Map.of("message", "Tên đăng nhập hoặc mật khẩu không đúng."));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Dang nhap that bai."));
+                    .body(Map.of("message", "Đăng nhập thất bại."));
         }
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
-        request.getSession().invalidate();
-        return ResponseEntity.ok(Map.of("message", "Dang xuat thanh cong."));
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.removeAttribute(SecurityConfig.ADMIN_CTX_KEY);
+        }
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công."));
     }
 }

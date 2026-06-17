@@ -55,7 +55,7 @@
             <div class="order-tabs">
               <button class="order-tab active" data-filter="all" onclick="filterByTab(this)">Tất cả</button>
               <button class="order-tab" data-filter="pending" onclick="filterByTab(this)">Chờ xác nhận</button>
-               <button class="order-tab" data-filter="processing" onclick="filterByTab(this)">Xác nhận</button>
+               <button class="order-tab" data-filter="confirmed" onclick="filterByTab(this)">Xác nhận</button>
               <button class="order-tab" data-filter="shipping" onclick="filterByTab(this)">Đang giao</button>
               <button class="order-tab" data-filter="completed" onclick="filterByTab(this)">Hoàn thành</button>
               <button class="order-tab" data-filter="cancelled" onclick="filterByTab(this)">Đã hủy</button>
@@ -68,15 +68,15 @@
 
             <div class="orders-scroll">
               <div class="orders-list">
-                <div th:each="order : ${orders}" class="order-card" th:attr="data-status=${order.status.toLowerCase()},data-payment=${order.paymentStatus.name()}">
+                <div th:each="order : ${orders}" class="order-card" th:attr="data-status=${order.status.name().toLowerCase()},data-payment=${order.paymentStatus.name()}">
                   <div class="order-card-header">
                     <div class="order-card-left">
                       <span class="order-code" th:text="${order.orderCode}">#DH001</span>
                       <span class="order-date" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</span>
                     </div>
                     <div class="order-card-right">
-                      <span class="order-status" th:classappend="'order-status-' + ${order.status.toLowerCase()}" th:text="${order.status == 'pending' ? 'Chờ xác nhận' : order.status == 'processing' ? 'Xác nhận' : order.status == 'shipping' ? 'Đang giao' : order.status == 'completed' ? 'Hoàn thành' : order.status == 'cancelled' ? 'Đã hủy' : order.status}">Chờ xác nhận</span>
-                      <span class="order-payment" th:classappend="${order.paymentStatus.name() == 'PAID' ? 'payment-paid' : 'payment-unpaid'}" th:text="${order.paymentStatus.name() == 'PAID' ? 'Đã thanh toán' : 'Chưa thanh toán'}">UNPAID</span>
+                      <span class="order-status" th:classappend="'order-status-' + ${order.status.name().toLowerCase()}" th:text="${order.status.name() == 'PENDING' ? 'Chờ xác nhận' : order.status.name() == 'CONFIRMED' ? 'Xác nhận' : order.status.name() == 'SHIPPING' ? 'Đang giao' : order.status.name() == 'COMPLETED' ? 'Hoàn thành' : order.status.name() == 'CANCELLED' ? 'Đã hủy' : order.status.name()}">Chờ xác nhận</span>
+                      <span class="order-payment" th:classappend="${order.paymentStatus.name() == 'SUCCESS' ? 'payment-paid' : 'payment-unpaid'}" th:text="${order.paymentStatus.name() == 'SUCCESS' ? 'Đã thanh toán' : 'Chưa thanh toán'}">UNPAID</span>
                     </div>
                   </div>
 
@@ -99,9 +99,9 @@
                   </div>
 
                   <div class="order-card-footer">
-                    <a th:href="@{/orders/{id}(id=${order.id})}" class="order-btn order-btn-detail"><i class="ti ti-eye"></i> Chi tiết</a>
-                    <button type="button" class="order-btn order-btn-receive" th:if="${order.status != null and (order.status.toLowerCase() == 'processing' or order.status.toLowerCase() == 'shipping')}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showReceiveConfirm(this)"><i class="ti ti-check"></i> Đã nhận hàng</button>
-                    <button type="button" class="order-btn order-btn-cancel" th:if="${order.status != null and order.status.toLowerCase() != 'completed' and order.status.toLowerCase() != 'cancelled' and order.status.toLowerCase() != 'shipping'}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showCancelConfirm(this)"><i class="ti ti-ban"></i> Hủy đơn</button>
+                    <a th:href="@{/orderdetail(id=${order.id})}" class="order-btn order-btn-detail"><i class="ti ti-eye"></i> Chi tiết</a>
+                    <button type="button" class="order-btn order-btn-receive" th:if="${order.status != null and (order.status.name() == 'CONFIRMED' or order.status.name() == 'SHIPPING')}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showReceiveConfirm(this)"><i class="ti ti-check"></i> Đã nhận hàng</button>
+                    <button type="button" class="order-btn order-btn-cancel" th:if="${order.status != null and order.status.name() != 'COMPLETED' and order.status.name() != 'CANCELLED' and order.status.name() != 'SHIPPING'}" th:data-id="${order.id}" th:data-code="${order.orderCode}" onclick="showCancelConfirm(this)"><i class="ti ti-ban"></i> Hủy đơn</button>
                   </div>
                 </div>
               </div>

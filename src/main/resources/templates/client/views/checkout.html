@@ -146,16 +146,16 @@
 
     <script>
       const formatPrice = (p) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p);
+      var checkoutItems = [];
 
       function renderCheckoutItems() {
-        const items = Cart.getItems();
         const container = document.getElementById('checkout-items');
         if (!container) return;
-        if (items.length === 0) {
+        if (checkoutItems.length === 0) {
           container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-grey-500)">Giỏ hàng trống</div>';
           return;
         }
-        container.innerHTML = items.map(item => `
+        container.innerHTML = checkoutItems.map(item => `
           <div style="display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--color-border)">
             <img src="${item.img || '/client/images/placeholder.svg'}" style="width:52px;height:52px;border-radius:8px;object-fit:contain;background:var(--color-grey-100);padding:4px" alt="" onerror="this.src='/client/images/placeholder.svg'" />
             <div style="flex:1;min-width:0">
@@ -168,8 +168,7 @@
       }
 
       function calcTotal() {
-        const items = Cart.getItems();
-        const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+        const subtotal = checkoutItems.reduce((s, i) => s + i.price * i.qty, 0);
         let shippingFee = 0;
         const selectedShipping = document.querySelector('input[name="shippingMethodId"]:checked');
         if (selectedShipping) {
@@ -187,15 +186,14 @@
       }
 
       function submitOrder() {
-        const items = Cart.getItems();
-        if (!items.length) { alert('Giỏ hàng trống!'); return; }
+        if (!checkoutItems.length) { alert('Giỏ hàng trống!'); return; }
         const addressInput = document.querySelector('input[name="addressId"]:checked');
         const shippingInput = document.querySelector('input[name="shippingMethodId"]:checked');
         if (!addressInput) { alert('Vui lòng chọn địa chỉ giao hàng!'); return; }
         if (!shippingInput) { alert('Vui lòng chọn phương thức vận chuyển!'); return; }
 
         const noteEl = document.querySelector('textarea[name="note"]');
-        document.getElementById('cartData').value = JSON.stringify(items);
+        document.getElementById('cartData').value = JSON.stringify(checkoutItems);
         document.getElementById('hiddenAddressId').value = addressInput.value;
         document.getElementById('hiddenShippingMethodId').value = shippingInput.value;
         document.getElementById('hiddenNote').value = noteEl ? noteEl.value : '';
@@ -204,15 +202,41 @@
         document.getElementById('checkoutForm').submit();
       }
 
-      document.addEventListener('DOMContentLoaded', () => {
-        renderCheckoutItems();
-        calcTotal();
-        document.querySelectorAll('input[name="shippingMethodId"]').forEach(el => {
+      function loadCheckoutItems() {
+        if (Cart.isLoggedIn()) {
+          fetch('/VitaStore/api/cart')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              checkoutItems = (data.items || []).map(function(i) {
+                return {
+                  id: i.productId,
+                  name: i.productName,
+                  price: i.price,
+                  qty: i.quantity,
+                  img: i.imageUrl || '/client/images/placeholder.svg'
+                };
+              });
+              renderCheckoutItems();
+              calcTotal();
+            })
+            .catch(function() {
+              renderCheckoutItems();
+            });
+        } else {
+          checkoutItems = Cart.getItems();
+          renderCheckoutItems();
+          calcTotal();
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        loadCheckoutItems();
+        document.querySelectorAll('input[name="shippingMethodId"]').forEach(function(el) {
           el.addEventListener('change', updateShippingFee);
         });
-        document.querySelectorAll('.payment-option').forEach(opt => {
-          opt.addEventListener('click', () => {
-            document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+        document.querySelectorAll('.payment-option').forEach(function(opt) {
+          opt.addEventListener('click', function() {
+            document.querySelectorAll('.payment-option').forEach(function(o) { o.classList.remove('selected'); });
             opt.classList.add('selected');
             opt.querySelector('input[type="radio"]').checked = true;
           });
