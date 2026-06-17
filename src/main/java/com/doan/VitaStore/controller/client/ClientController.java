@@ -3,6 +3,9 @@ package com.doan.VitaStore.controller.client;
 import com.doan.VitaStore.dto.response.client.ShopCategoryResponse;
 import com.doan.VitaStore.dto.response.client.ShopProductResponse;
 import com.doan.VitaStore.entity.UserEntity;
+import com.doan.VitaStore.security.service.UserDetailsImpl;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import com.doan.VitaStore.service.CategoryService;
 import com.doan.VitaStore.service.ProductService;
@@ -84,7 +87,11 @@ public class ClientController {
     }
 
     @GetMapping("/orders")
-    public String orders() {
+    public String orders(Model model) {
+        addUserToModel(model);
+        model.addAttribute("orders", Collections.emptyList());
+        model.addAttribute("orderItemsMap", new HashMap<>());
+        model.addAttribute("orderProductImages", new HashMap<>());
         return "client/views/orders";
     }
 
@@ -94,13 +101,23 @@ public class ClientController {
     }
 
     @GetMapping("/userprofile")
-    public String userProfile() {
+    public String userProfile(Model model) {
+        addUserToModel(model);
         return "client/views/userprofile";
     }
 
     @GetMapping("/address")
-    public String address() {
+    public String address(Model model) {
+        addUserToModel(model);
+        model.addAttribute("addresses", Collections.emptyList());
         return "client/views/address";
+    }
+
+    private void addUserToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UserDetailsImpl) {
+            model.addAttribute("user", ((UserDetailsImpl) auth.getPrincipal()).getUser());
+        }
     }
 
     @GetMapping("/about")

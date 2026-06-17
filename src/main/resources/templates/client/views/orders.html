@@ -20,9 +20,9 @@
     <div class="page-wrapper">
       <aside class="sidebar">
         <div class="sidebar-user-card">
-          <div class="sidebar-avatar" th:text="${session.user != null ? session.user.name.substring(0,1).toUpperCase() : 'U'}">U</div>
-          <div class="sidebar-username" th:text="${session.user.name}">Người dùng</div>
-          <div class="sidebar-email" th:text="${session.user.email}">email@example.com</div>
+          <div class="sidebar-avatar" th:text="${user.fullName.substring(0,1).toUpperCase()}">U</div>
+          <div class="sidebar-username" th:text="${user.fullName}">Người dùng</div>
+          <div class="sidebar-email" th:text="${user.email}">email@example.com</div>
         </div>
         <nav class="sidebar-nav">
           <div class="sidebar-nav-group">
