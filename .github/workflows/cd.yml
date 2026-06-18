@@ -112,7 +112,8 @@ jobs:
               fi
               sleep 2
             done
-            sudo mkdir -p /etc/nginx/sites-enabled
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo mkdir -p /etc/nginx/sites-enabled /var/www/html
             sudo cp /opt/vitastore/nginx/vitastore.conf /etc/nginx/sites-enabled/
             sudo nginx -t && sudo nginx -s reload || true
             docker image prune -f
