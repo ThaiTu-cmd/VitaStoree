@@ -261,6 +261,7 @@
         ]);
 
         renderItems(d.items);
+        document.getElementById('orderTotal').textContent = d.totalAmount ? Utils.formatCurrency(d.totalAmount) : '0₫';
         renderHistory(d.history);
 
         const select = document.getElementById('editStatus');

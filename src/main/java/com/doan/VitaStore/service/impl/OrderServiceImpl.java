@@ -3,6 +3,7 @@ package com.doan.VitaStore.service.impl;
 import com.doan.VitaStore.dto.request.client.CartItemJson;
 import com.doan.VitaStore.dto.response.admin.AdminOrderDetailResponse;
 import com.doan.VitaStore.dto.response.admin.AdminOrderResponse;
+import com.doan.VitaStore.dto.response.admin.DailyRevenue;
 import com.doan.VitaStore.dto.response.client.OrderItemResponse;
 import com.doan.VitaStore.dto.response.client.OrderResponse;
 import com.doan.VitaStore.entity.*;
@@ -86,6 +87,10 @@ public class OrderServiceImpl implements OrderService {
             item.setPrice(BigDecimal.valueOf(ci.getPrice()));
             item.setQuantity(ci.getQty());
             orderItemsRepository.save(item);
+            if (product != null) {
+                product.setQuantity(product.getQuantity() - ci.getQty());
+                productsRepository.save(product);
+            }
         }
 
         PaymentMethod pm = PaymentMethod.COD;
@@ -106,7 +111,7 @@ public class OrderServiceImpl implements OrderService {
         OrderHistoryEntity history = new OrderHistoryEntity();
         history.setOrder(order);
         history.setStatus(OrderStatus.PENDING);
-        history.setNote(note != null && !note.isBlank() ? note : "Đơn hàng được tạo");
+        history.setNote(note != null && !note.isBlank() ? note : "Khách hàng đã tạo đơn");
         history.setChangeTime(LocalDateTime.now());
         orderHistoryRepository.save(history);
 
@@ -148,6 +153,13 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Không thể huỷ đơn hàng ở trạng thái hiện tại");
         order.setStatus(OrderStatus.CANCELLED);
         ordersRepository.save(order);
+        for (OrderItemsEntity oi : order.getOrderItems()) {
+            if (oi.getProduct() != null) {
+                ProductsEntity p = oi.getProduct();
+                p.setQuantity(p.getQuantity() + oi.getQuantity());
+                productsRepository.save(p);
+            }
+        }
         OrderHistoryEntity h = new OrderHistoryEntity();
         h.setOrder(order); h.setStatus(OrderStatus.CANCELLED);
         h.setNote("Khách hàng đã huỷ đơn");
@@ -252,6 +264,15 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Không thể chuyển sang trạng thái đang giao từ trạng thái hiện tại");
         order.setStatus(status);
         ordersRepository.save(order);
+        if (status == OrderStatus.CANCELLED) {
+            for (OrderItemsEntity oi : order.getOrderItems()) {
+                if (oi.getProduct() != null) {
+                    ProductsEntity p = oi.getProduct();
+                    p.setQuantity(p.getQuantity() + oi.getQuantity());
+                    productsRepository.save(p);
+                }
+            }
+        }
         OrderHistoryEntity h = new OrderHistoryEntity();
         h.setOrder(order); h.setStatus(status);
         h.setNote("Admin cập nhật trạng thái -> " + status.name());
@@ -265,6 +286,29 @@ public class OrderServiceImpl implements OrderService {
         OrdersEntity order = ordersRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
         ordersRepository.delete(order);
+    }
+
+    @Override @Transactional(readOnly = true)
+    public List<DailyRevenue> getDailyRevenue(int days) {
+        LocalDateTime end = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59);
+        LocalDateTime start = end.minusDays(days - 1).withHour(0).withMinute(0).withSecond(0);
+        List<Object[]> rows = ordersRepository.getDailyRevenue(start, end);
+        Map<String, BigDecimal> map = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < days; i++) {
+            LocalDateTime d = start.plusDays(i);
+            map.put(d.toLocalDate().toString(), BigDecimal.ZERO);
+        }
+        for (Object[] row : rows) {
+            String day = row[0] != null ? row[0].toString() : "";
+            BigDecimal rev = BigDecimal.ZERO;
+            if (row[1] != null) {
+                rev = row[1] instanceof BigDecimal bd ? bd : new BigDecimal(row[1].toString());
+            }
+            map.put(day, rev);
+        }
+        return map.entrySet().stream()
+                .map(e -> new DailyRevenue(e.getKey(), e.getValue()))
+                .toList();
     }
 
     private OrderResponse toOrderResponse(OrdersEntity order) {

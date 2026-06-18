@@ -2,6 +2,7 @@ package com.doan.VitaStore.service;
 
 import com.doan.VitaStore.dto.response.admin.AdminOrderDetailResponse;
 import com.doan.VitaStore.dto.response.admin.AdminOrderResponse;
+import com.doan.VitaStore.dto.response.admin.DailyRevenue;
 import com.doan.VitaStore.dto.response.client.OrderResponse;
 import java.util.List;
 
@@ -16,4 +17,5 @@ public interface OrderService {
     AdminOrderDetailResponse getAdminOrderDetail(int orderId);
     AdminOrderResponse updateOrderStatus(int orderId, String newStatus);
     void deleteOrder(int orderId);
+    List<DailyRevenue> getDailyRevenue(int days);
 }

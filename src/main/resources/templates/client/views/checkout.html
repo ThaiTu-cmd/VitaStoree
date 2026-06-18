@@ -119,7 +119,6 @@
                 <input type="hidden" name="cartData" id="cartData" value="" />
                 <input type="hidden" name="addressId" id="hiddenAddressId" value="" />
                 <input type="hidden" name="shippingMethodId" id="hiddenShippingMethodId" value="" />
-                <input type="hidden" name="note" id="hiddenNote" value="" />
               </form>
 
               <button type="button" class="btn btn-primary btn-full btn-lg" style="margin-top:16px" onclick="submitOrder()">
@@ -192,11 +191,9 @@
         if (!addressInput) { alert('Vui lòng chọn địa chỉ giao hàng!'); return; }
         if (!shippingInput) { alert('Vui lòng chọn phương thức vận chuyển!'); return; }
 
-        const noteEl = document.querySelector('textarea[name="note"]');
         document.getElementById('cartData').value = JSON.stringify(checkoutItems);
         document.getElementById('hiddenAddressId').value = addressInput.value;
         document.getElementById('hiddenShippingMethodId').value = shippingInput.value;
-        document.getElementById('hiddenNote').value = noteEl ? noteEl.value : '';
 
         Cart.clear();
         document.getElementById('checkoutForm').submit();

@@ -304,12 +304,17 @@ const API = {
   },
 
   // ── DASHBOARD STATS ──────────────────────────────────────────
-  // Replace with: await (await fetch(`${DB_CONFIG.apiBase}/dashboard/stats`,{headers:this._h()})).json()
+  async getRevenue() {
+    const res = await fetch(`${DB_CONFIG.apiBase}/dashboard/revenue`, { headers: this._h() });
+    if (!res.ok) throw new Error("Không thể tải doanh thu");
+    return res.json();
+  },
   async getDashboardStats() {
-    const [orders, users, products] = await Promise.all([
+    const [orders, users, products, revenue] = await Promise.all([
       this.getOrders(),
       this.getUsers(),
       this.getProducts(),
+      this.getRevenue(),
     ]);
     return {
       totalRevenue: orders
@@ -317,12 +322,15 @@ const API = {
         .reduce((s, o) => s + o.total, 0),
       totalOrders: orders.length,
       pendingOrders: orders.filter((o) => o.status === "pending").length,
-      activeProducts: products.filter((p) => p.stock_quantity > 0).length,
-      lowStock: products.filter((p) => p.stock_quantity < 50).length,
+      activeProducts: products.filter((p) => p.stockQuantity > 0).length,
+      lowStock: products.filter((p) => p.stockQuantity < 50).length,
       totalUsers: users.filter(
-        (u) => String(u.role || "").toUpperCase() === "CUSTOMER",
+        (u) => String(u.role || "").toUpperCase() === "USER",
       ).length,
-      recentOrders: orders.slice(0, 5),
+      recentOrders: orders
+        .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+        .slice(0, 5),
+      revenue: revenue,
     };
   },
 };

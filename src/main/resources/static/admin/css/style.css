@@ -379,7 +379,7 @@ a {
    PAGE WRAPPER
 ═══════════════════════════════════════ */
 .page-wrap {
-  padding: 28px;
+  padding: 36px 28px 28px;
   flex: 1;
   animation: pageFadeIn 0.3s ease;
 }
@@ -1100,34 +1100,92 @@ textarea.form-control {
 }
 
 /* ═══════════════════════════════════════
-   CHART PLACEHOLDER
+   CHART
 ═══════════════════════════════════════ */
+.chart-wrapper {
+  display: flex;
+  gap: 8px;
+}
+.chart-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 4px 0 0;
+  min-width: 60px;
+  text-align: right;
+  font-size: 10px;
+  color: var(--text-muted);
+  position: relative;
+}
+.chart-y-axis span {
+  line-height: 1;
+  transform: translateY(50%);
+}
+.chart-y-axis span:last-child {
+  transform: translateY(0);
+}
+.chart-bars-area {
+  flex: 1;
+  min-width: 0;
+}
 .chart-placeholder {
   height: 180px;
   background: linear-gradient(180deg, var(--primary-light) 0%, #f0f9ff 100%);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: flex-end;
-  padding: 12px;
+  padding: 28px 12px 12px;
   gap: 6px;
-  overflow: hidden;
+  position: relative;
 }
 .chart-bar {
   flex: 1;
   background: linear-gradient(180deg, var(--primary), var(--accent));
   border-radius: 4px 4px 0 0;
   opacity: 0.75;
-  transition: opacity var(--transition);
+  transition: opacity 0.2s;
   min-width: 0;
+  position: relative;
+  cursor: pointer;
 }
 .chart-bar:hover {
   opacity: 1;
+}
+.chart-bar .chart-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-inverse, #1e293b);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+  margin-bottom: 6px;
+}
+.chart-bar:hover .chart-tooltip {
+  opacity: 1;
+}
+.chart-bar .chart-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--bg-inverse, #1e293b);
 }
 
 .chart-labels {
   display: flex;
   justify-content: space-between;
-  padding: 6px 4px 0;
+  padding: 6px 4px 0 68px;
 }
 .chart-labels span {
   font-size: 10px;

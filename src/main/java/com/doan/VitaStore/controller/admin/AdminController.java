@@ -11,6 +11,7 @@ import com.doan.VitaStore.dto.response.admin.UserResponse;
 import com.doan.VitaStore.dto.request.admin.AdminOrderUpdateRequest;
 import com.doan.VitaStore.dto.response.admin.AdminOrderDetailResponse;
 import com.doan.VitaStore.dto.response.admin.AdminOrderResponse;
+import com.doan.VitaStore.dto.response.admin.DailyRevenue;
 import com.doan.VitaStore.dto.response.client.AddressResponse;
 import com.doan.VitaStore.dto.response.client.CartResponse;
 import com.doan.VitaStore.exception.UserNotFoundException;
@@ -53,6 +54,11 @@ public class AdminController {
     @GetMapping({ "", "/index" })
     public String dashboard() {
         return "admin/index";
+    }
+
+    @GetMapping("/dashboard/revenue")
+    public ResponseEntity<List<DailyRevenue>> getRevenue() {
+        return ResponseEntity.ok(orderService.getDailyRevenue(7));
     }
 
     @GetMapping("/login")

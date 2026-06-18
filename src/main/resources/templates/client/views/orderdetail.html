@@ -52,16 +52,19 @@
         <div class="detail-top-bar">
           <div>
             <div class="detail-order-code" th:text="${order.orderCode}">#ORD-001</div>
-            <div class="detail-order-date" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</div>
+            <div class="detail-order-date" th:if="${order.createdAt != null}" th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2025</div>
+            <div class="detail-order-date" th:unless="${order.createdAt != null}">---</div>
           </div>
           <div class="detail-top-status">
-            <span class="order-status" th:classappend="'order-status-' + ${order.status.name().toLowerCase()}" th:text="${order.status.name() == 'PENDING' ? 'Chờ xác nhận' : order.status.name() == 'CONFIRMED' ? 'Xác nhận' : order.status.name() == 'SHIPPING' ? 'Đang giao' : order.status.name() == 'COMPLETED' ? 'Hoàn thành' : order.status.name() == 'CANCELLED' ? 'Đã hủy' : order.status.name()}">Chờ xác nhận</span>
-            <span class="order-payment" th:classappend="${order.paymentStatus.name() == 'SUCCESS' ? 'payment-paid' : 'payment-unpaid'}" th:text="${order.paymentStatus.name() == 'SUCCESS' ? 'Đã thanh toán' : 'Chưa thanh toán'}">UNPAID</span>
+            <span class="order-status" th:if="${order.status != null}" th:classappend="'order-status-' + ${order.status.name().toLowerCase()}" th:text="${order.status.name() == 'PENDING' ? 'Chờ xác nhận' : order.status.name() == 'CONFIRMED' ? 'Xác nhận' : order.status.name() == 'SHIPPING' ? 'Đang giao' : order.status.name() == 'COMPLETED' ? 'Hoàn thành' : order.status.name() == 'CANCELLED' ? 'Đã hủy' : order.status.name()}">Chờ xác nhận</span>
+            <span class="order-status" th:unless="${order.status != null}">---</span>
+            <span class="order-payment" th:if="${order.paymentStatus != null}" th:classappend="${order.paymentStatus.name() == 'SUCCESS' ? 'payment-paid' : 'payment-unpaid'}" th:text="${order.paymentStatus.name() == 'SUCCESS' ? 'Đã thanh toán' : 'Chưa thanh toán'}">UNPAID</span>
+            <span class="order-payment" th:unless="${order.paymentStatus != null}">---</span>
           </div>
         </div>
 
         <!-- Horizontal two-column layout -->
-        <div class="detail-grid-2col">
+        <div class="detail-grid-2col" th:if="${order.status != null}">
 
           <!-- LEFT COLUMN: Products + Totals -->
           <div class="detail-col">
@@ -72,7 +75,6 @@
                   <img class="detail-product-img" th:src="${productImages.containsKey(item.productId) ? productImages.get(item.productId) : '/client/images/placeholder.svg'}" alt="" onerror="this.src='/client/images/placeholder.svg'" />
                   <div class="detail-product-info">
                     <div class="detail-product-name" th:text="${item.productName}">Rượu vang</div>
-                    <div class="detail-product-sku" th:if="${item.productSku != null}"></div>
                   </div>
                   <div class="detail-product-qty" th:text="'x' + ${item.quantity}">x1</div>
                   <div class="detail-product-price" th:text="${#numbers.formatInteger(item.lineTotal, 1, 'COMMA') + 'đ'}">0đ</div>
@@ -81,7 +83,8 @@
               <div class="detail-card-totals">
                 <div class="detail-total-row detail-total-grand">
                   <span>Tổng cộng</span>
-                  <span th:text="${#numbers.formatInteger(order.totalAmount, 1, 'COMMA') + 'đ'}">0đ</span>
+                  <span th:if="${order.totalAmount != null}" th:text="${#numbers.formatInteger(order.totalAmount, 1, 'COMMA') + 'đ'}">0đ</span>
+                  <span th:unless="${order.totalAmount != null}">0đ</span>
                 </div>
               </div>
             </div>

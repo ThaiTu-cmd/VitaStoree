@@ -101,23 +101,29 @@ public class ClientController {
     @GetMapping("/checkout")
     public String checkout(Model model) {
         UserEntity user = getCurrentUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
         List<AddressResponse> addresses = addressService
                 .getAddressesByUser(user.getUserId());
         model.addAttribute("addresses", addresses);
         Map<String, Object> standard = new HashMap<>();
-        standard.put("id", 1); standard.put("name", "Giao hàng tiêu chuẩn");
+        standard.put("id", 1);
+        standard.put("name", "Giao hàng tiêu chuẩn");
         standard.put("fee", BigDecimal.valueOf(30000));
         Map<String, Object> fast = new HashMap<>();
-        fast.put("id", 2); fast.put("name", "Giao hàng nhanh");
+        fast.put("id", 2);
+        fast.put("name", "Giao hàng nhanh");
         fast.put("fee", BigDecimal.valueOf(50000));
         model.addAttribute("shippingMethods", List.of(standard, fast));
         Map<String, Integer> fees = new HashMap<>();
-        fees.put("1", 30000); fees.put("2", 50000);
+        fees.put("1", 30000);
+        fees.put("2", 50000);
         try {
             model.addAttribute("shippingFeesJson",
                     new ObjectMapper().writeValueAsString(fees));
-        } catch (Exception e) { model.addAttribute("shippingFeesJson", "{}"); }
+        } catch (Exception e) {
+            model.addAttribute("shippingFeesJson", "{}");
+        }
         return "client/views/checkout";
     }
 
@@ -127,7 +133,8 @@ public class ClientController {
             @RequestParam(value = "note", required = false) String note,
             RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
         try {
             OrderResponse order = orderService.placeOrder(
                     user.getUserId(), addressId, "COD", note, cartData);
@@ -142,7 +149,8 @@ public class ClientController {
     @GetMapping("/orders")
     public String orders(Model model) {
         UserEntity user = getCurrentUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
         model.addAttribute("user", user);
         List<OrderResponse> orders = orderService.getOrdersByUser(user.getUserId());
         model.addAttribute("orders", orders);
@@ -161,9 +169,22 @@ public class ClientController {
     }
 
     @GetMapping("/orderdetail")
-    public String orderDetail(@RequestParam("id") int id, Model model) {
+    public String orderDetail(@RequestParam(value = "id", required = false) String idParam,
+            Model model, RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
+        if (idParam == null || idParam.isBlank()) {
+            ra.addFlashAttribute("orderError", "ID đơn hàng không hợp lệ");
+            return "redirect:/orders";
+        }
+        Integer id;
+        try {
+            id = Integer.parseInt(idParam);
+        } catch (NumberFormatException e) {
+            ra.addFlashAttribute("orderError", "ID đơn hàng không hợp lệ");
+            return "redirect:/orders";
+        }
         try {
             OrderResponse order = orderService.getOrderDetail(id, user.getUserId());
             model.addAttribute("order", order);
@@ -185,9 +206,10 @@ public class ClientController {
 
     @PostMapping("/orders/cancel")
     public String cancelOrder(@RequestParam("id") int orderId,
-                               RedirectAttributes ra) {
+            RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
         try {
             orderService.cancelOrder(orderId, user.getUserId());
             ra.addFlashAttribute("orderSuccess", "Đã huỷ đơn hàng thành công");
@@ -199,9 +221,10 @@ public class ClientController {
 
     @PostMapping("/orders/confirm-received")
     public String confirmReceived(@RequestParam("id") int orderId,
-                                   RedirectAttributes ra) {
+            RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
-        if (user == null) return "redirect:/auth/login";
+        if (user == null)
+            return "redirect:/auth/login";
         try {
             orderService.confirmReceived(orderId, user.getUserId());
             ra.addFlashAttribute("orderSuccess", "Xác nhận nhận hàng thành công");
