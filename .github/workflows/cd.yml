@@ -63,34 +63,32 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           envs: ENV_B64,GITHUB_TOKEN,GITHUB_ACTOR,FRONTEND_API_BASE_URL,GITHUB_REPOSITORY
+          script: |
+            set -e
+            cd /opt/vitastore
+            echo "$ENV_B64" | base64 -d > .env
+            sed -i "s@\${FRONTEND_API_BASE_URL}@$FRONTEND_API_BASE_URL@g" .env
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+            for ((i=1; i<=30; i++)); do
+              if curl -sf http://127.0.0.1:8080/VitaStore/auth/login > /dev/null 2>&1; then
+                echo "healthy"
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "health check failed"
+                exit 1
+              fi
+              sleep 2
+            done
+            sudo mkdir -p /etc/nginx/sites-enabled
+            sudo cp /opt/vitastore/nginx/vitastore.conf /etc/nginx/sites-enabled/
+            sudo nginx -t && sudo nginx -s reload || true
+            docker image prune -f
         env:
           ENV_B64: ${{ env.ENV_B64 }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           FRONTEND_API_BASE_URL: ${{ vars.FRONTEND_API_BASE_URL }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        script: |
-          set -e
-          cd /opt/vitastore
-          echo "$ENV_B64" | base64 -d > .env
-          sed -i "s@\${FRONTEND_API_BASE_URL}@$FRONTEND_API_BASE_URL@g" .env
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-          docker compose -f docker-compose.prod.yml pull
-          docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
-
-          for ((i=1; i<=30; i++)); do
-            if curl -sf http://127.0.0.1:8080/VitaStore/auth/login > /dev/null 2>&1; then
-              echo "healthy"
-              break
-            fi
-            if [ "$i" = "30" ]; then
-              echo "health check failed"
-              exit 1
-            fi
-            sleep 2
-          done
-
-          sudo mkdir -p /etc/nginx/sites-enabled
-          sudo cp /opt/vitastore/nginx/vitastore.conf /etc/nginx/sites-enabled/
-          sudo nginx -t && sudo nginx -s reload || true
-          docker image prune -f
