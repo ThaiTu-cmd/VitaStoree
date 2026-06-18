@@ -13,6 +13,7 @@ public interface OrderService {
     OrderResponse getOrderDetail(int orderId, int userId);
     void cancelOrder(int orderId, int userId);
     void confirmReceived(int orderId, int userId);
+    void updatePaymentStatus(int orderId, String transactionNo, String status);
     List<AdminOrderResponse> getAllOrders();
     AdminOrderDetailResponse getAdminOrderDetail(int orderId);
     AdminOrderResponse updateOrderStatus(int orderId, String newStatus);

@@ -283,6 +283,22 @@ public class OrderServiceImpl implements OrderService {
         return toAdminResponse(order);
     }
 
+    @Override
+    @Transactional
+    public void updatePaymentStatus(int orderId, String transactionNo, String status) {
+        PaymentsEntity payment = paymentsRepository.findByOrderOrderId(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho đơn hàng"));
+        PaymentStatus ps;
+        try { ps = PaymentStatus.valueOf(status.toUpperCase()); }
+        catch (Exception e) { throw new RuntimeException("Trạng thái thanh toán không hợp lệ"); }
+        payment.setPaymentStatus(ps);
+        payment.setTransactionNo(transactionNo);
+        if (ps == PaymentStatus.SUCCESS) {
+            payment.setPaidAt(LocalDateTime.now());
+        }
+        paymentsRepository.save(payment);
+    }
+
     @Override @Transactional
     public void deleteOrder(int orderId) {
         OrdersEntity order = ordersRepository.findByOrderId(orderId)

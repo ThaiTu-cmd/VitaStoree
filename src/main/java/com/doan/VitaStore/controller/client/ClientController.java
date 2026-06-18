@@ -10,7 +10,9 @@ import com.doan.VitaStore.dto.response.client.OrderItemResponse;
 import com.doan.VitaStore.dto.response.client.OrderResponse;
 import com.doan.VitaStore.service.AddressService;
 import com.doan.VitaStore.service.OrderService;
+import com.doan.VitaStore.service.VNPAYService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +50,9 @@ public class ClientController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private VNPAYService vnpayService;
 
     @GetMapping("/")
     public String home() {
@@ -134,7 +139,9 @@ public class ClientController {
     @PostMapping("/checkout/place-order")
     public String placeOrder(@RequestParam("cartData") String cartData,
             @RequestParam("addressId") int addressId,
+            @RequestParam(value = "paymentMethod", defaultValue = "COD") String paymentMethod,
             @RequestParam(value = "note", required = false) String note,
+            HttpServletRequest request,
             RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
         if (user == null)
@@ -145,7 +152,23 @@ public class ClientController {
         }
         try {
             OrderResponse order = orderService.placeOrder(
-                    user.getUserId(), addressId, "COD", note, cartData);
+                    user.getUserId(), addressId, paymentMethod, note, cartData);
+
+            if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
+                String ipAddress = request.getRemoteAddr();
+                if ("0:0:0:0:0:0:0:1".equals(ipAddress) || "127.0.0.1".equals(ipAddress)) {
+                    ipAddress = "127.0.0.1";
+                }
+                String orderInfo = "Thanh toan don hang " + order.getOrderCode();
+                String paymentUrl = vnpayService.createPaymentUrl(
+                        order.getTotalAmount().longValue(),
+                        orderInfo,
+                        String.valueOf(order.getId()),
+                        ipAddress
+                );
+                return "redirect:" + paymentUrl;
+            }
+
             ra.addFlashAttribute("orderSuccess",
                     "Đặt hàng thành công! Mã đơn: " + order.getOrderCode());
         } catch (Exception e) {
