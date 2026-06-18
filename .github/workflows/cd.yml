@@ -80,6 +80,26 @@ jobs:
             GITHUB_REPOSITORY=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+            # Wait for MySQL and create database user for persisted volumes
+            for ((i=1; i<=30; i++)); do
+              if docker exec vitastore-mysql mysqladmin ping -h localhost --silent 2>/dev/null; then
+                echo "MySQL ready"
+                source .env
+                docker exec vitastore-mysql mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e \
+                  "CREATE USER IF NOT EXISTS '${SPRING_DATASOURCE_USERNAME}'@'%' IDENTIFIED BY '${SPRING_DATASOURCE_PASSWORD}'; \
+                   GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${SPRING_DATASOURCE_USERNAME}'@'%'; \
+                   FLUSH PRIVILEGES;"
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "MySQL failed to start"
+                docker logs vitastore-mysql --tail 30
+                exit 1
+              fi
+              sleep 2
+            done
+
             for ((i=1; i<=30; i++)); do
               if curl -sf http://127.0.0.1:8080/VitaStore/auth/login > /dev/null 2>&1; then
                 echo "healthy"
