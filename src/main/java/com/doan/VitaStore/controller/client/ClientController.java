@@ -20,8 +20,6 @@ import com.doan.VitaStore.service.ProductService;
 import com.doan.VitaStore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -50,9 +48,6 @@ public class ClientController {
 
     @Autowired
     private OrderService orderService;
-
-    @Autowired
-    private AuthenticationManager authenticationManager;
 
     @GetMapping("/")
     public String home() {
@@ -211,7 +206,6 @@ public class ClientController {
             Map<String, Object> shipping = new HashMap<>();
             shipping.put("name", "Giao hàng tiêu chuẩn");
             model.addAttribute("shipping", shipping);
-            model.addAttribute("history", List.of());
             model.addAttribute("user", user);
         } catch (Exception e) {
             model.addAttribute("orderError", e.getMessage());
@@ -512,9 +506,8 @@ public class ClientController {
             return "redirect:/auth/register";
         }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String fullName = firstName + " " + lastName;
+        userService.registerUser(fullName, email, phone, password);
 
         redirectAttributes.addFlashAttribute("success", "Đăng ký thành công! Chào mừng bạn đến với VitaStore.");
         return "redirect:/auth/login";

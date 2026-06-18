@@ -118,13 +118,7 @@
             <div>
               <div class="card">
                 <div class="card-header"><div class="card-title">✏️ Cập nhật trạng thái</div></div>
-                <div style="padding: 22px">
-                  <div class="form-group">
-                    <label class="form-label">Trạng thái *</label>
-                    <select class="form-control" id="editStatus"></select>
-                  </div>
-                  <button class="btn btn-primary btn-lg" style="width: 100%; margin-top: 6px" id="saveBtn" onclick="saveOrder()">💾 Lưu thay đổi</button>
-                </div>
+                <div style="padding: 22px" id="statusActions"></div>
               </div>
 
               <!-- Thanh toán -->
@@ -168,13 +162,13 @@
         cancelled: '✗'
       };
 
-      const ALLOWED_TRANSITIONS = {
-        pending: ['confirmed', 'shipping', 'completed', 'cancelled'],
-        confirmed: ['shipping', 'completed', 'cancelled'],
-        shipping: ['completed', 'cancelled'],
-        completed: [],
-        cancelled: []
+      const NEXT_STEP_MAP = {
+        pending: { status: 'confirmed', label: 'Xác nhận đơn hàng', icon: '📄' },
+        confirmed: { status: 'shipping', label: 'Giao hàng', icon: '🚚' },
+        shipping: { status: 'completed', label: 'Hoàn thành', icon: '✓' },
       };
+
+      const CANCEL_ACTION = { status: 'cancelled', label: 'Hủy đơn', icon: '✗' };
 
       function renderFieldGrid(containerId, fields) {
         document.getElementById(containerId).innerHTML = fields
@@ -264,34 +258,34 @@
         document.getElementById('orderTotal').textContent = d.totalAmount ? Utils.formatCurrency(d.totalAmount) : '0₫';
         renderHistory(d.history);
 
-        const select = document.getElementById('editStatus');
-        const allowed = ALLOWED_TRANSITIONS[d.status] || [];
-        const terminal = d.status === 'completed' || d.status === 'cancelled';
-        let html = `<option value="${d.status}" selected>${STATUS_ICON[d.status] || ''} ${STATUS_MAP[d.status] || d.status}</option>`;
-        allowed.forEach(s => {
-          html += `<option value="${s}">${STATUS_ICON[s] || ''} ${STATUS_MAP[s] || s}</option>`;
-        });
-        select.innerHTML = html;
-        select.disabled = terminal;
-        document.getElementById('saveBtn').style.display = terminal ? 'none' : '';
+        renderStatusActions(d.status);
       }
 
-      async function saveOrder() {
-        const btn = document.getElementById('saveBtn');
-        btn.disabled = true;
-        btn.textContent = '⏳ Đang lưu...';
-        const data = {
-          status: document.getElementById('editStatus').value,
-        };
+      function renderStatusActions(status) {
+        const container = document.getElementById('statusActions');
+        const terminal = status === 'completed' || status === 'cancelled';
+        if (terminal) {
+          container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted);font-weight:500">Đơn hàng đã kết thúc</div>';
+          return;
+        }
+        const next = NEXT_STEP_MAP[status];
+        const buttons = [];
+        if (next) {
+          buttons.push(`<button class="btn btn-primary btn-lg" style="width:100%" onclick="updateStatus('${next.status}')">${next.icon} ${next.label}</button>`);
+        }
+        buttons.push(`<button class="btn btn-danger btn-lg" style="width:100%;margin-top:8px" onclick="updateStatus('${CANCEL_ACTION.status}')">${CANCEL_ACTION.icon} ${CANCEL_ACTION.label}</button>`);
+        container.innerHTML = buttons.join('');
+      }
+
+      async function updateStatus(status) {
+        if (status === 'cancelled' && !confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) return;
+        const data = { status };
         try {
           await API.updateOrder(currentOrderId, data);
           Utils.toast('Đã cập nhật đơn hàng thành công!');
           loadDetail();
         } catch (e) {
           Utils.toast('Lỗi: ' + e.message, 'error');
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = '💾 Lưu thay đổi';
         }
       }
 

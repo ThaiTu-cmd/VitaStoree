@@ -256,12 +256,14 @@ public class OrderServiceImpl implements OrderService {
         OrderStatus current = order.getStatus();
         if (current == OrderStatus.COMPLETED || current == OrderStatus.CANCELLED)
             throw new RuntimeException("Không thể thay đổi trạng thái đơn hàng đã " + (current == OrderStatus.COMPLETED ? "hoàn thành" : "hủy"));
-        if (status == OrderStatus.PENDING && current != OrderStatus.PENDING)
+        if (status == OrderStatus.PENDING)
             throw new RuntimeException("Không thể chuyển về trạng thái chờ xử lý");
-        if (status == OrderStatus.CONFIRMED && current != OrderStatus.PENDING)
-            throw new RuntimeException("Không thể chuyển về trạng thái đã xác nhận từ trạng thái hiện tại");
-        if (status == OrderStatus.SHIPPING && current != OrderStatus.CONFIRMED && current != OrderStatus.PENDING)
-            throw new RuntimeException("Không thể chuyển sang trạng thái đang giao từ trạng thái hiện tại");
+        if (current == OrderStatus.PENDING && status != OrderStatus.CONFIRMED && status != OrderStatus.CANCELLED)
+            throw new RuntimeException("Chỉ có thể xác nhận đơn hàng từ trạng thái chờ xử lý");
+        if (current == OrderStatus.CONFIRMED && status != OrderStatus.SHIPPING && status != OrderStatus.CANCELLED)
+            throw new RuntimeException("Chỉ có thể chuyển sang đang giao từ trạng thái đã xác nhận");
+        if (current == OrderStatus.SHIPPING && status != OrderStatus.COMPLETED && status != OrderStatus.CANCELLED)
+            throw new RuntimeException("Chỉ có thể hoàn thành đơn từ trạng thái đang giao");
         order.setStatus(status);
         ordersRepository.save(order);
         if (status == OrderStatus.CANCELLED) {
@@ -333,11 +335,21 @@ public class OrderServiceImpl implements OrderService {
         String note = "";
         if (order.getOrderHistories() != null && !order.getOrderHistories().isEmpty())
             note = order.getOrderHistories().get(0).getNote();
+        List<Map<String, Object>> historyList = new ArrayList<>();
+        if (order.getOrderHistories() != null) {
+            for (OrderHistoryEntity h : order.getOrderHistories()) {
+                Map<String, Object> hm = new LinkedHashMap<>();
+                hm.put("status", h.getStatus().name());
+                hm.put("note", h.getNote());
+                hm.put("changeTime", h.getChangeTime() != null ? h.getChangeTime().toString() : "");
+                historyList.add(hm);
+            }
+        }
         return new OrderResponse(order.getOrderId(), order.getOrderDate(),
                 order.getStatus(), order.getTotalAmount(),
                 order.getReceiverName(), order.getReceiverPhone(),
                 order.getProvince(), order.getDistrict(), order.getWard(),
-                order.getStreetAddress(), pm, ps, note, itemResponses);
+                order.getStreetAddress(), pm, ps, note, itemResponses, historyList);
     }
 
     private AdminOrderResponse toAdminResponse(OrdersEntity order) {

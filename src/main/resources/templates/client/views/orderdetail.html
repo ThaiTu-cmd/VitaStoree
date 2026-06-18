@@ -90,14 +90,25 @@
             </div>
 
             <!-- Status Timeline -->
-            <div class="detail-card" th:if="${not #lists.isEmpty(history)}">
+            <div class="detail-card" th:if="${order.history != null and not #lists.isEmpty(order.history)}">
               <div class="detail-card-title"><i class="ti ti-timeline"></i> Lịch sử đơn hàng</div>
               <div class="detail-card-body">
                 <div class="timeline">
-                  <div th:each="h : ${history}" class="timeline-item">
-                    <div class="timeline-dot active"></div>
-                    <div class="timeline-status">
-                      <span th:text="${h}">pending</span>
+                  <div th:each="h : ${order.history}" class="timeline-item">
+                    <div class="timeline-dot" th:classappend="${h.status == 'CANCELLED' ? 'dot-cancelled' : 'active'}"></div>
+                    <div class="timeline-content">
+                      <div class="timeline-status">
+                        <span th:switch="${h.status}">
+                          <span th:case="'PENDING'">⏳ Chờ xác nhận</span>
+                          <span th:case="'CONFIRMED'">📄 Đã xác nhận</span>
+                          <span th:case="'SHIPPING'">🚚 Đang giao</span>
+                          <span th:case="'COMPLETED'">✓ Hoàn thành</span>
+                          <span th:case="'CANCELLED'">✗ Đã hủy</span>
+                          <span th:case="*" th:text="${h.status}"></span>
+                        </span>
+                      </div>
+                      <div class="timeline-note" th:if="${h.note != null and !h.note.isEmpty()}" th:text="${h.note}"></div>
+                      <div class="timeline-time" th:text="${h.changeTime}"></div>
                     </div>
                   </div>
                 </div>
@@ -128,15 +139,12 @@
             <div class="detail-card">
               <div class="detail-card-title"><i class="ti ti-user"></i> Người nhận</div>
               <div class="detail-card-body">
-                <form th:action="@{/orders/{id}/update(id=${order.id})}" method="post">
-                  <dl class="detail-info-grid">
-                    <dt>Họ tên</dt>
-                    <dd><input class="detail-input" type="text" name="receiverName" th:value="${order.receiverName}" th:disabled="${order.status.name() != 'PENDING'}" required /></dd>
-                    <dt>Số điện thoại</dt>
-                    <dd><input class="detail-input" type="text" name="receiverPhone" th:value="${order.receiverPhone}" th:disabled="${order.status.name() != 'PENDING'}" required /></dd>
-                  </dl>
-                  <button type="submit" class="detail-btn detail-btn-primary" style="width:100%;margin-top:12px" th:if="${order.status.name() == 'PENDING'}"><i class="ti ti-device-floppy"></i> Lưu thay đổi</button>
-                </form>
+                <dl class="detail-info-grid">
+                  <dt>Họ tên</dt>
+                  <dd th:text="${order.receiverName}">—</dd>
+                  <dt>Số điện thoại</dt>
+                  <dd th:text="${order.receiverPhone}">—</dd>
+                </dl>
               </div>
             </div>
 

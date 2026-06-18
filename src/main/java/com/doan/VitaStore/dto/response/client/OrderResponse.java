@@ -6,6 +6,7 @@ import com.doan.VitaStore.enums.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public class OrderResponse {
     private int id;
@@ -22,6 +23,7 @@ public class OrderResponse {
     private PaymentStatus paymentStatus;
     private String note;
     private List<OrderItemResponse> items;
+    private List<Map<String, Object>> history;
 
     public String getOrderCode() { return "#DH" + id; }
     public LocalDateTime getCreatedAt() { return createdAt; }
@@ -34,13 +36,14 @@ public class OrderResponse {
                          BigDecimal totalAmount, String receiverName, String receiverPhone,
                          String province, String district, String ward, String streetAddress,
                          String paymentMethod, PaymentStatus paymentStatus, String note,
-                         List<OrderItemResponse> items) {
+                         List<OrderItemResponse> items,
+                         List<Map<String, Object>> history) {
         this.id = id; this.createdAt = createdAt; this.status = status;
         this.totalAmount = totalAmount; this.receiverName = receiverName;
         this.receiverPhone = receiverPhone; this.province = province;
         this.district = district; this.ward = ward; this.streetAddress = streetAddress;
         this.paymentMethod = paymentMethod; this.paymentStatus = paymentStatus;
-        this.note = note; this.items = items;
+        this.note = note; this.items = items; this.history = history;
     }
 
     public int getId() { return id; }
@@ -68,5 +71,7 @@ public class OrderResponse {
     public void setNote(String note) { this.note = note; }
     public List<OrderItemResponse> getItems() { return items; }
     public void setItems(List<OrderItemResponse> items) { this.items = items; }
+    public List<Map<String, Object>> getHistory() { return history; }
+    public void setHistory(List<Map<String, Object>> history) { this.history = history; }
 
 }
