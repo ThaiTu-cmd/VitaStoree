@@ -87,6 +87,7 @@ jobs:
               fi
               if [ "$i" = "30" ]; then
                 echo "health check failed"
+                docker logs vitastore-app --tail 50
                 exit 1
               fi
               sleep 2

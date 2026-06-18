@@ -4,8 +4,12 @@ services:
     container_name: vitastore-mysql
     restart: unless-stopped
     env_file: .env
+    environment:
+      MYSQL_USER: ${SPRING_DATASOURCE_USERNAME}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./VitaStore_DB.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 10s
