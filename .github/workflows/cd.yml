@@ -113,9 +113,15 @@ jobs:
               sleep 2
             done
             sudo rm -f /etc/nginx/sites-enabled/default
-            sudo mkdir -p /etc/nginx/sites-enabled /var/www/html
-            sudo cp /opt/vitastore/nginx/vitastore.conf /etc/nginx/sites-enabled/
-            sudo nginx -t && sudo nginx -s reload || true
+            sudo mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled /var/www/html
+            if sudo test -f /etc/letsencrypt/live/thaitucmd.store/fullchain.pem && sudo test -f /etc/letsencrypt/live/thaitucmd.store/privkey.pem; then
+              sudo install -m 0644 /opt/vitastore/nginx/vitastore-ssl.conf /etc/nginx/sites-available/vitastore.conf
+            else
+              sudo install -m 0644 /opt/vitastore/nginx/vitastore.conf /etc/nginx/sites-available/vitastore.conf
+            fi
+            sudo ln -sfn /etc/nginx/sites-available/vitastore.conf /etc/nginx/sites-enabled/vitastore.conf
+            sudo nginx -t
+            sudo systemctl reload nginx
             docker image prune -f
         env:
           ENV_B64: ${{ env.ENV_B64 }}

@@ -40,3 +40,4 @@ build/
 ### Docker ###
 nginx/*
 !nginx/vitastore.conf
+!nginx/vitastore-ssl.conf
