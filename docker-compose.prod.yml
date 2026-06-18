@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: vitastore-mysql
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+    networks:
+      - vitastore-net
+
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY:-vitastore/app}:latest
+    container_name: vitastore-app
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vitastore-net
+
+volumes:
+  mysql-data:
+
+networks:
+  vitastore-net:
+    driver: bridge

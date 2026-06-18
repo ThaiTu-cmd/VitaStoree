@@ -1,0 +1,38 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: vitastore-mysql
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./VitaStore_DB.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+    networks:
+      - vitastore-net
+
+  app:
+    build: .
+    container_name: vitastore-app
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - vitastore-net
+
+volumes:
+  mysql-data:
+
+networks:
+  vitastore-net:
+    driver: bridge
