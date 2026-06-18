@@ -84,6 +84,32 @@
                   </div>
                 </label>
               </div>
+              <div class="payment-option" style="padding:12px;border:1.5px solid var(--color-border);border-radius:8px;margin-bottom:8px;cursor:pointer">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                  <input type="radio" name="paymentMethod" value="VNPAY" form="checkoutForm" />
+                  <div>
+                    <div style="font-weight:600">VNPAY - QR thanh toán qua ngân hàng</div>
+                    <div style="font-size:12px;color:var(--color-grey-500)">Quét mã QR bằng ứng dụng ngân hàng</div>
+                  </div>
+                </label>
+              </div>
+              <div class="payment-option" style="padding:12px;border:1.5px solid var(--color-border);border-radius:8px;margin-bottom:8px;cursor:pointer">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                  <input type="radio" name="paymentMethod" value="BANK_TRANSFER" form="checkoutForm" />
+                  <div>
+                    <div style="font-weight:600">Chuyển khoản ngân hàng</div>
+                    <div style="font-size:12px;color:var(--color-grey-500)">Chuyển khoản tới tài khoản cửa hàng</div>
+                  </div>
+                </label>
+              </div>
+              <div id="bank-transfer-info" style="display:none;padding:12px;background:var(--color-grey-50);border-radius:8px;margin-top:8px;font-size:13px;line-height:1.6">
+                <strong>Thông tin chuyển khoản:</strong><br/>
+                Ngân hàng: <strong>Vietcombank</strong><br/>
+                Số tài khoản: <strong>111222333444</strong><br/>
+                Chủ tài khoản: <strong>VitaStore</strong><br/>
+                Nội dung CK: <strong id="bank-transfer-content">VITA[MaDon]</strong><br/>
+                <em style="color:var(--color-grey-500)">* Sau khi chuyển khoản, vui lòng gửi ảnh biên lai qua fanpage để được xác nhận</em>
+              </div>
             </div>
 
             <!-- NOTE -->
