@@ -93,16 +93,25 @@ public class ClientController {
         return "client/views/shop";
     }
 
+    private String blockAdmin(UserEntity user) {
+        if (user != null && user.getRole() == com.doan.VitaStore.enums.Role.ADMIN)
+            return "redirect:/";
+        return null;
+    }
+
     @GetMapping("/cart")
-    public String cart() {
+    public String cart(RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user != null) { String r = blockAdmin(user); if (r != null) { ra.addFlashAttribute("adminError", "Tính năng này không dành cho Admin"); return r; } }
         return "client/views/cart";
     }
 
     @GetMapping("/checkout")
-    public String checkout(Model model) {
+    public String checkout(Model model, RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        { String r = blockAdmin(user); if (r != null) { ra.addFlashAttribute("adminError", "Tính năng này không dành cho Admin"); return r; } }
         List<AddressResponse> addresses = addressService
                 .getAddressesByUser(user.getUserId());
         model.addAttribute("addresses", addresses);
@@ -135,6 +144,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("orderError", "Tính năng này không dành cho Admin");
+            return "redirect:/checkout";
+        }
         try {
             OrderResponse order = orderService.placeOrder(
                     user.getUserId(), addressId, "COD", note, cartData);
@@ -147,10 +160,11 @@ public class ClientController {
     }
 
     @GetMapping("/orders")
-    public String orders(Model model) {
+    public String orders(Model model, RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        { String r = blockAdmin(user); if (r != null) { ra.addFlashAttribute("adminError", "Tính năng này không dành cho Admin"); return r; } }
         model.addAttribute("user", user);
         List<OrderResponse> orders = orderService.getOrdersByUser(user.getUserId());
         model.addAttribute("orders", orders);
@@ -174,6 +188,7 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        { String r = blockAdmin(user); if (r != null) { ra.addFlashAttribute("adminError", "Tính năng này không dành cho Admin"); return r; } }
         if (idParam == null || idParam.isBlank()) {
             ra.addFlashAttribute("orderError", "ID đơn hàng không hợp lệ");
             return "redirect:/orders";
@@ -210,6 +225,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("orderError", "Tính năng này không dành cho Admin");
+            return "redirect:/orders";
+        }
         try {
             orderService.cancelOrder(orderId, user.getUserId());
             ra.addFlashAttribute("orderSuccess", "Đã huỷ đơn hàng thành công");
@@ -225,6 +244,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("orderError", "Tính năng này không dành cho Admin");
+            return "redirect:/orders";
+        }
         try {
             orderService.confirmReceived(orderId, user.getUserId());
             ra.addFlashAttribute("orderSuccess", "Xác nhận nhận hàng thành công");
@@ -235,15 +258,20 @@ public class ClientController {
     }
 
     @GetMapping("/userprofile")
-    public String userProfile(Model model) {
+    public String userProfile(Model model, RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null) return "redirect:/auth/login";
+        { String r = blockAdmin(user); if (r != null) { ra.addFlashAttribute("adminError", "Tính năng này không dành cho Admin"); return r; } }
         addUserToModel(model);
         return "client/views/userprofile";
     }
 
     @GetMapping("/address")
-    public String address(Model model) {
-        addUserToModel(model);
+    public String address(Model model, RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
+        if (user == null) return "redirect:/auth/login";
+        { String r = blockAdmin(user); if (r != null) { ra.addFlashAttribute("adminError", "Tính năng này không dành cho Admin"); return r; } }
+        addUserToModel(model);
         if (user != null) {
             model.addAttribute("addresses", addressService.getAddressesByUser(user.getUserId()));
         } else {
@@ -265,6 +293,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("addressError", "Tính năng này không dành cho Admin");
+            return "redirect:/address";
+        }
         try {
             AddressRequest req = new AddressRequest(
                     user.getUserId(), fullName, phone, city, province,
@@ -291,6 +323,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("addressError", "Tính năng này không dành cho Admin");
+            return "redirect:/address";
+        }
         try {
             AddressRequest req = new AddressRequest(
                     user.getUserId(), fullName, phone, city, province,
@@ -305,6 +341,13 @@ public class ClientController {
 
     @PostMapping("/address/delete")
     public String deleteAddress(@RequestParam("id") int id, RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null)
+            return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("addressError", "Tính năng này không dành cho Admin");
+            return "redirect:/address";
+        }
         try {
             addressService.deleteAddressById(id);
             ra.addFlashAttribute("addressSuccess", "Đã xóa địa chỉ");
@@ -316,6 +359,13 @@ public class ClientController {
 
     @PostMapping("/address/set-default")
     public String setDefaultAddress(@RequestParam("id") int id, RedirectAttributes ra) {
+        UserEntity user = getCurrentUser();
+        if (user == null)
+            return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("addressError", "Tính năng này không dành cho Admin");
+            return "redirect:/address";
+        }
         try {
             addressService.setDefaultById(id);
             ra.addFlashAttribute("addressSuccess", "Đã đặt làm mặc định");
@@ -334,6 +384,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("profileError", "Tính năng này không dành cho Admin");
+            return "redirect:/userprofile";
+        }
         try {
             if (!email.equals(user.getEmail()) && userService.existsByEmail(email)) {
                 throw new IllegalArgumentException("Email đã được sử dụng");
@@ -355,6 +409,10 @@ public class ClientController {
         UserEntity user = getCurrentUser();
         if (user == null)
             return "redirect:/auth/login";
+        if (user.getRole() == com.doan.VitaStore.enums.Role.ADMIN) {
+            ra.addFlashAttribute("passwordError", "Tính năng này không dành cho Admin");
+            return "redirect:/userprofile";
+        }
         try {
             if (!newPassword.equals(confirmPassword)) {
                 throw new IllegalArgumentException("Mật khẩu xác nhận không khớp");

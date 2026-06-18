@@ -19,6 +19,7 @@
     <div th:replace="~{client/fragments/header :: header}"></div>
 
     <main>
+      <div th:if="${adminError != null}" style="max-width:1200px;margin:16px auto 0;padding:12px 20px;background:#fef2f2;color:var(--color-danger);border:1px solid #fca5a5;border-radius:8px;font-weight:600;text-align:center" th:text="${adminError}">Lỗi</div>
       <div class="container" style="padding-top: 48px; padding-bottom: 80px">
         <!-- ===== HERO ===== -->
         <section class="hero-section">
@@ -151,6 +152,16 @@
 
     <script th:src="@{/client/js/app.js}"></script>
     <script>
+      (function() {
+        var msg = sessionStorage.getItem("adminError");
+        if (msg) {
+          sessionStorage.removeItem("adminError");
+          var el = document.createElement("div");
+          el.style.cssText = "max-width:1200px;margin:16px auto 0;padding:12px 20px;background:#fef2f2;color:var(--color-danger);border:1px solid #fca5a5;border-radius:8px;font-weight:600;text-align:center";
+          el.textContent = msg;
+          document.querySelector("main").prepend(el);
+        }
+      })();
       (function() {
         var slides = document.querySelectorAll('.hero-slide');
         if (slides.length < 2) return;

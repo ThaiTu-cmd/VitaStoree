@@ -2,9 +2,11 @@ package com.doan.VitaStore.controller.client;
 
 import com.doan.VitaStore.dto.request.client.CartRequest;
 import com.doan.VitaStore.dto.response.client.CartResponse;
+import com.doan.VitaStore.enums.Role;
 import com.doan.VitaStore.security.service.UserDetailsImpl;
 import com.doan.VitaStore.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,10 @@ public class CartApiController {
 
     @Autowired
     private CartService cartService;
+
+    private boolean isAdmin(UserDetailsImpl principal) {
+        return principal != null && principal.getUser().getRole() == Role.ADMIN;
+    }
 
     @GetMapping
     public ResponseEntity<?> getCart(@AuthenticationPrincipal UserDetailsImpl principal) {
@@ -35,6 +41,9 @@ public class CartApiController {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Chưa đăng nhập"));
         }
+        if (isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Tính năng này không dành cho Admin", "redirect", "/"));
+        }
         CartResponse cart = cartService.syncCart(principal.getUser().getUserId(), items);
         return ResponseEntity.ok(cart);
     }
@@ -44,6 +53,9 @@ public class CartApiController {
                                       @RequestBody CartRequest request) {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Chưa đăng nhập"));
+        }
+        if (isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Tính năng này không dành cho Admin", "redirect", "/"));
         }
         CartResponse cart = cartService.addItemByUser(principal.getUser().getUserId(), request);
         return ResponseEntity.ok(cart);
@@ -56,6 +68,9 @@ public class CartApiController {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Chưa đăng nhập"));
         }
+        if (isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Tính năng này không dành cho Admin", "redirect", "/"));
+        }
         int quantity = body.getOrDefault("quantity", 1);
         CartResponse cart = cartService.updateItemByUser(principal.getUser().getUserId(), itemId, quantity);
         return ResponseEntity.ok(cart);
@@ -67,6 +82,9 @@ public class CartApiController {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Chưa đăng nhập"));
         }
+        if (isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Tính năng này không dành cho Admin", "redirect", "/"));
+        }
         cartService.removeItemByUser(principal.getUser().getUserId(), itemId);
         return ResponseEntity.ok(Map.of("message", "Đã xóa mục khỏi giỏ hàng"));
     }
@@ -75,6 +93,9 @@ public class CartApiController {
     public ResponseEntity<?> clearCart(@AuthenticationPrincipal UserDetailsImpl principal) {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Chưa đăng nhập"));
+        }
+        if (isAdmin(principal)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Tính năng này không dành cho Admin", "redirect", "/"));
         }
         cartService.clearCartByUser(principal.getUser().getUserId());
         return ResponseEntity.ok(Map.of("message", "Đã xóa giỏ hàng"));

@@ -62,14 +62,13 @@ const Cart = (() => {
         body: JSON.stringify({ productId: parseInt(id), quantity: 1 }),
       })
         .then((r) => {
-          if (r.ok) {
-            fetchCartFromApi();
-            Toast.show(`Đã thêm "${name}" vào giỏ hàng`, "success");
-          }
+          if (!r.ok) return r.json().then(d => { if (handleApiError(d)) return; Notify.show(d.error || "Lỗi"); throw d; });
+          fetchCartFromApi();
+          Toast.show(`Đã thêm "${name}" vào giỏ hàng`, "success");
           return r;
         })
         .catch((err) => {
-          Toast.show("Lỗi khi thêm vào giỏ hàng", "error");
+          if (!err?.error) Notify.show("Lỗi khi thêm vào giỏ hàng");
           throw err;
         });
     } else {
@@ -90,11 +89,12 @@ const Cart = (() => {
     if (isLoggedIn()) {
       return fetch(`/VitaStore/api/cart/items/${id}`, { method: "DELETE" })
         .then((r) => {
-          if (r.ok) fetchCartFromApi();
+          if (!r.ok) return r.json().then(d => { if (handleApiError(d)) return; Notify.show(d.error || "Lỗi"); throw d; });
+          fetchCartFromApi();
           return r;
         })
         .catch((err) => {
-          Toast.show("Lỗi khi xóa sản phẩm", "error");
+          if (!err?.error) Notify.show("Lỗi khi xóa sản phẩm");
           throw err;
         });
     } else {
@@ -113,11 +113,12 @@ const Cart = (() => {
         body: JSON.stringify({ quantity: Math.max(1, qty) }),
       })
         .then((r) => {
-          if (r.ok) fetchCartFromApi();
+          if (!r.ok) return r.json().then(d => { if (handleApiError(d)) return; Notify.show(d.error || "Lỗi"); throw d; });
+          fetchCartFromApi();
           return r;
         })
         .catch((err) => {
-          Toast.show("Lỗi khi cập nhật số lượng", "error");
+          if (!err?.error) Notify.show("Lỗi khi cập nhật số lượng");
           throw err;
         });
     } else {
@@ -143,8 +144,11 @@ const Cart = (() => {
   const clear = () => {
     if (isLoggedIn()) {
       fetch("/VitaStore/api/cart", { method: "DELETE" })
-        .then((r) => { if (r.ok) fetchCartFromApi(); })
-        .catch(() => Toast.show("Lỗi khi xóa giỏ hàng", "error"));
+        .then((r) => {
+          if (!r.ok) return r.json().then(d => { if (handleApiError(d)) return; Notify.show(d.error || "Lỗi"); throw d; });
+          fetchCartFromApi();
+        })
+        .catch((err) => { if (!err?.error) Notify.show("Lỗi khi xóa giỏ hàng"); });
     } else {
       items = [];
       saveLocal();
@@ -173,13 +177,12 @@ const Cart = (() => {
       body: JSON.stringify(payload),
     })
       .then((r) => {
-        if (r.ok) {
-          localStorage.removeItem(lsKey);
-          loadLocal();
-          fetchCartFromApi();
-        }
+        if (!r.ok) return r.json().then(d => { if (handleApiError(d)) return; Notify.show(d.error || "Lỗi"); throw d; });
+        localStorage.removeItem(lsKey);
+        loadLocal();
+        fetchCartFromApi();
       })
-      .catch(() => fetchCartFromApi())
+      .catch((err) => { if (!err?.error) fetchCartFromApi(); })
       .finally(() => { isSyncing = false; });
   };
 
@@ -284,6 +287,16 @@ const CartDropdown = (() => {
   return { update };
 })();
 
+const handleApiError = (data) => {
+  if (data && data.redirect) {
+    sessionStorage.setItem("adminError", data.error);
+    localStorage.removeItem("vitastore_cart");
+    window.location.href = '/VitaStore/';
+    return true;
+  }
+  return false;
+};
+
 // ===== TOAST =====
 const Toast = (() => {
   const getContainer = () => {
@@ -307,6 +320,19 @@ const Toast = (() => {
 
   return { show };
 })();
+
+const Notify = {
+  show(msg) {
+    const existing = document.querySelector(".notify-fixed");
+    if (existing) existing.remove();
+    const el = document.createElement("div");
+    el.className = "notify-fixed";
+    el.style.cssText = "position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:99999;max-width:1200px;width:90%;padding:14px 24px;background:#fef2f2;color:#dc2626;border:2px solid #fca5a5;border-radius:10px;font-weight:700;font-size:15px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.12)";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.transition = "opacity 0.4s"; el.style.opacity = "0"; setTimeout(() => el.remove(), 400); }, 4000);
+  }
+};
 
 // ===== CONTACT BUBBLE =====
 const ContactBubble = (() => {
