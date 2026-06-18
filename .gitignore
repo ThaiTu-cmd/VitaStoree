@@ -38,5 +38,5 @@ build/
 .env.local
 
 ### Docker ###
-nginx/
+nginx/*
 !nginx/vitastore.conf
