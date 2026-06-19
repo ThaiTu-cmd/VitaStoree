@@ -19,33 +19,17 @@
 
     <main>
       <!-- Hero -->
-      <section
-        style="
-          background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
-          color: white;
-          padding: 56px 0;
-          text-align: center;
-        "
-      >
+      <section class="page-hero" style="padding: 56px 0">
         <div class="container">
-          <h1 style="font-size: 2.25rem; font-weight: 700; margin-bottom: 12px">
-            Liên hệ với chúng tôi
-          </h1>
-          <p
-            style="
-              font-size: 1rem;
-              opacity: 0.9;
-              max-width: 520px;
-              margin: 0 auto;
-            "
-          >
+          <h1 style="font-size: 2.25rem">Liên hệ với chúng tôi</h1>
+          <p style="max-width: 520px">
             Đội ngũ VitaStore luôn sẵn sàng hỗ trợ bạn. Hãy liên hệ với chúng
             tôi qua các kênh dưới đây.
           </p>
         </div>
       </section>
 
-      <div class="container" style="padding-top: 56px; padding-bottom: 72px">
+      <div class="container contact-section">
         <!-- Breadcrumb -->
         <nav class="breadcrumb" style="margin-bottom: 40px">
           <a th:href="@{/}">Trang chủ</a>
@@ -53,224 +37,67 @@
           <span class="breadcrumb-current">Liên hệ</span>
         </nav>
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: 1fr 1.4fr;
-            gap: 48px;
-            align-items: start;
-          "
-        >
+        <div class="contact-grid">
           <!-- Left: Contact Info -->
           <div>
-            <h2
-              style="
-                font-size: 1.4rem;
-                font-weight: 700;
-                margin-bottom: 28px;
-                color: var(--color-grey-900);
-              "
-            >
-              Thông tin liên hệ
-            </h2>
-
-            <div
-              style="
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-                margin-bottom: 36px;
-              "
-            >
-              <div style="display: flex; gap: 16px; align-items: flex-start">
-                <div
-                  style="
-                    width: 44px;
-                    height: 44px;
-                    background: var(--color-accent-light);
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                  "
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--color-accent)"
-                    stroke-width="2"
-                  >
-                    <path
-                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.8 19.79 19.79 0 0 1 1.61 5.2 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.72 18z"
-                    />
+            <h2 class="contact-info-title">Thông tin liên hệ</h2>
+            <div class="contact-info-list">
+              <div class="contact-info-item">
+                <div class="contact-info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.8 19.79 19.79 0 0 1 1.61 5.2 2 2 0 0 1 3.59 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.5a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.72 18z" />
                   </svg>
                 </div>
                 <div>
-                  <div
-                    style="
-                      font-weight: 600;
-                      color: var(--color-grey-900);
-                      margin-bottom: 4px;
-                    "
-                  >
-                    Hotline
+                  <div class="contact-info-label">Hotline</div>
+                  <div class="contact-info-value">
+                    <a href="tel:0966042071" style="font-size:1.1rem;font-weight:700">0966 042 071</a>
                   </div>
-                  <a
-                    href="tel:0966042071"
-                    style="
-                      color: var(--color-accent);
-                      font-size: 1.1rem;
-                      font-weight: 700;
-                      text-decoration: none;
-                    "
-                    >0966 042 071</a
-                  >
-                  <div
-                    style="
-                      font-size: 0.8rem;
-                      color: var(--color-grey-500);
-                      margin-top: 2px;
-                    "
-                  >
-                    Thứ 2 – Chủ nhật, 8:00 – 21:00
-                  </div>
+                  <div class="contact-info-sub">Thứ 2 – Chủ nhật, 8:00 – 21:00</div>
                 </div>
               </div>
 
-              <div style="display: flex; gap: 16px; align-items: flex-start">
-                <div
-                  style="
-                    width: 44px;
-                    height: 44px;
-                    background: var(--color-accent-light);
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                  "
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--color-accent)"
-                    stroke-width="2"
-                  >
-                    <path
-                      d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-                    />
+              <div class="contact-info-item">
+                <div class="contact-info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                     <polyline points="22,6 12,13 2,6" />
                   </svg>
                 </div>
                 <div>
-                  <div
-                    style="
-                      font-weight: 600;
-                      color: var(--color-grey-900);
-                      margin-bottom: 4px;
-                    "
-                  >
-                    Email
+                  <div class="contact-info-label">Email</div>
+                  <div class="contact-info-value">
+                    <a href="mailto:vitastore@gmail.com">vitastore@gmail.com</a>
                   </div>
-                  <a
-                    href="mailto:vitastore@gmail.com"
-                    style="color: var(--color-accent); text-decoration: none"
-                    >vitastore@gmail.com</a
-                  >
-                  <div
-                    style="
-                      font-size: 0.8rem;
-                      color: var(--color-grey-500);
-                      margin-top: 2px;
-                    "
-                  >
-                    Phản hồi trong vòng 24 giờ
-                  </div>
+                  <div class="contact-info-sub">Phản hồi trong vòng 24 giờ</div>
                 </div>
               </div>
 
-              <div style="display: flex; gap: 16px; align-items: flex-start">
-                <div
-                  style="
-                    width: 44px;
-                    height: 44px;
-                    background: var(--color-accent-light);
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                  "
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--color-accent)"
-                    stroke-width="2"
-                  >
+              <div class="contact-info-item">
+                <div class="contact-info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
                 </div>
                 <div>
-                  <div
-                    style="
-                      font-weight: 600;
-                      color: var(--color-grey-900);
-                      margin-bottom: 4px;
-                    "
-                  >
-                    Địa chỉ
-                  </div>
-                  <div style="color: var(--color-grey-700); line-height: 1.6">
+                  <div class="contact-info-label">Địa chỉ</div>
+                  <div class="contact-info-value">
                     123 Nguyễn Thị Minh Khai,<br />Quận 3, TP. Hồ Chí Minh
                   </div>
                 </div>
               </div>
 
-              <div style="display: flex; gap: 16px; align-items: flex-start">
-                <div
-                  style="
-                    width: 44px;
-                    height: 44px;
-                    background: var(--color-accent-light);
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                  "
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--color-accent)"
-                    stroke-width="2"
-                  >
+              <div class="contact-info-item">
+                <div class="contact-info-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                 </div>
                 <div>
-                  <div
-                    style="
-                      font-weight: 600;
-                      color: var(--color-grey-900);
-                      margin-bottom: 4px;
-                    "
-                  >
-                    Giờ làm việc
-                  </div>
-                  <div style="color: var(--color-grey-700); line-height: 1.7">
+                  <div class="contact-info-label">Giờ làm việc</div>
+                  <div class="contact-info-value">
                     Thứ 2 – Thứ 6: 8:00 – 21:00<br />
                     Thứ 7 – Chủ nhật: 9:00 – 20:00
                   </div>
@@ -280,96 +107,35 @@
           </div>
 
           <!-- Right: Contact Form -->
-          <div
-            style="
-              background: var(--color-white);
-              border: 1px solid var(--color-border);
-              border-radius: var(--radius-lg);
-              padding: 40px;
-              box-shadow: var(--shadow-md);
-            "
-          >
-            <h2
-              style="
-                font-size: 1.4rem;
-                font-weight: 700;
-                margin-bottom: 8px;
-                color: var(--color-grey-900);
-              "
-            >
-              Gửi tin nhắn cho chúng tôi
-            </h2>
-            <p style="color: var(--color-grey-600); font-size: 0.9rem; margin-bottom: 28px">
+          <div class="contact-form-card">
+            <h2 class="contact-form-title">Gửi tin nhắn cho chúng tôi</h2>
+            <p class="contact-form-sub">
               Chúng tôi sẽ phản hồi trong vòng 24 giờ làm việc.
             </p>
 
             <!-- Success/Error flash -->
-            <div
-              th:if="${success}"
-              style="
-                background: #e8f5e9;
-                color: #2e7d32;
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                font-size: 0.875rem;
-              "
-            >
-              ✓
-              <span th:text="${success}">Tin nhắn đã được gửi thành công!</span>
+            <div th:if="${success}" class="contact-flash success">
+              ✓ <span th:text="${success}">Tin nhắn đã được gửi thành công!</span>
             </div>
-            <div
-              th:if="${error}"
-              style="
-                background: #ffebee;
-                color: #c62828;
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                font-size: 0.875rem;
-              "
-            >
+            <div th:if="${error}" class="contact-flash error">
               ✕ <span th:text="${error}">Đã xảy ra lỗi, vui lòng thử lại.</span>
             </div>
 
             <form th:action="@{/contact}" method="post">
-              <div
-                style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px"
-              >
+              <div class="contact-form-2col">
                 <div class="form-group">
-                  <label class="form-label"
-                    >Họ và tên <span style="color: var(--color-green)">*</span></label
-                  >
-                  <input
-                    class="form-control"
-                    type="text"
-                    name="name"
-                    placeholder="Nguyễn Văn A"
-                    required
-                  />
+                  <label class="form-label">Họ và tên <span style="color: var(--color-green)">*</span></label>
+                  <input class="form-control" type="text" name="name" placeholder="Nguyễn Văn A" required />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Số điện thoại / Email</label>
-                  <input
-                    class="form-control"
-                    type="tel"
-                    name="phone"
-                    placeholder="0966 042 071 hoặc email@example.com"
-                  />
+                  <input class="form-control" type="tel" name="phone" placeholder="0966 042 071 hoặc email@example.com" />
                 </div>
               </div>
 
               <div class="form-group">
-                  <label class="form-label"
-                    >Email <span style="color: var(--color-green)">*</span></label
-                  >
-                  <input
-                    class="form-control"
-                    type="email"
-                    name="email"
-                    placeholder="email@example.com"
-                    required
-                  />
+                <label class="form-label">Email <span style="color: var(--color-green)">*</span></label>
+                <input class="form-control" type="email" name="email" placeholder="email@example.com" required />
               </div>
 
               <div class="form-group">
@@ -385,31 +151,12 @@
               </div>
 
               <div class="form-group">
-                  <label class="form-label"
-                    >Lời nhắn của bạn <span style="color: var(--color-danger)">*</span></label
-                  >
-                  <textarea
-                    class="form-control"
-                    name="message"
-                    rows="5"
-                    placeholder="Hãy chia sẻ nhu cầu của bạn để VitaStore tư vấn chính xác hơn..."
-                    required
-                  ></textarea>
+                <label class="form-label">Lời nhắn của bạn <span style="color: var(--color-danger)">*</span></label>
+                <textarea class="form-control" name="message" rows="5" placeholder="Hãy chia sẻ nhu cầu của bạn để VitaStore tư vấn chính xác hơn..." required></textarea>
               </div>
 
-              <button
-                type="submit"
-                class="btn btn-primary btn-full btn-lg"
-                style="margin-top: 8px"
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
+              <button type="submit" class="btn btn-primary btn-full btn-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="22" y1="2" x2="11" y2="13" />
                   <polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
@@ -419,31 +166,10 @@
           </div>
         </div>
 
-        <!-- Map placeholder -->
-        <div style="margin-top: 56px">
-          <h2
-            style="
-              font-size: 1.4rem;
-              font-weight: 700;
-              margin-bottom: 20px;
-              color: var(--color-grey-900);
-            "
-          >
-            Vị trí cửa hàng
-          </h2>
-          <div
-            style="
-              width: 100%;
-              height: 360px;
-              background: var(--color-grey-100);
-              border-radius: var(--radius-lg);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 1px solid var(--color-border);
-              overflow: hidden;
-            "
-          >
+        <!-- Map -->
+        <div class="contact-map-section">
+          <h2 class="contact-map-title">Vị trí cửa hàng</h2>
+          <div class="contact-map-wrap">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.446!2d106.6834!3d10.7769!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDQ2JzM2LjgiTiAxMDbCsDQxJzAwLjIiRQ!5e0!3m2!1svi!2svn!4v1620000000000!5m2!1svi!2svn"
               width="100%"
