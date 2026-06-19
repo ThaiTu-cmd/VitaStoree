@@ -78,6 +78,8 @@ jobs:
             sed -i "s@\${FRONTEND_API_BASE_URL}@$FRONTEND_API_BASE_URL@g" .env
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
             GITHUB_REPOSITORY=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+            docker volume create vitastore_mysql-data >/dev/null
+            docker rm -f vitastore-app vitastore-mysql mysql 2>/dev/null || true
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
 

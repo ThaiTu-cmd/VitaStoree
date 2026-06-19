@@ -42,6 +42,8 @@ services:
 
 volumes:
   mysql-data:
+    name: vitastore_mysql-data
+    external: true
 
 networks:
   vitastore-net:
