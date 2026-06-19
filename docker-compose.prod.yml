@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: vitastore-mysql
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_USER: ${SPRING_DATASOURCE_USERNAME}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./VitaStore_DB.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" -e 'SELECT 1' \"$${MYSQL_DATABASE}\" >/dev/null 2>&1"]
+    networks:
+      - vitastore-net
+
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY:-vitastore/app}:latest
+    container_name: vitastore-app
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8080/VitaStore/auth/login"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+    networks:
+      - vitastore-net
+
+volumes:
+  mysql-data:
+
+networks:
+  vitastore-net:
+    driver: bridge

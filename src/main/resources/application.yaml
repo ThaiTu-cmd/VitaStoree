@@ -10,7 +10,19 @@ spring:
     password: root
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
     show-sql: false
+
+vnpay:
+  tmn-code: 7X4X8515
+  hash-secret: VEGRHZ0WYDTC6XFC1EWHVTFA5UEQY1DI
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:8080/VitaStore/vnpay/return
+  ipn-url: http://localhost:8080/VitaStore/vnpay/ipn
+  version: 2.1.0
+  command: pay

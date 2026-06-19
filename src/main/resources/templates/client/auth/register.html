@@ -16,7 +16,8 @@
     <style>
       body {
         position: relative;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
       }
       body::before {
         content: "";
@@ -104,14 +105,46 @@
         grid-template-columns: 1fr 1fr;
         gap: var(--space-4);
       }
+      .form-group > .form-label {
+        display: inline-block;
+        margin-right: 8px;
+      }
+      .field-error {
+        display: none;
+        color: var(--color-danger);
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+      .field-error.is-visible {
+        display: inline;
+      }
+      .form-control.field-invalid {
+        border-color: var(--color-danger);
+        background: #fffafa;
+      }
+      .terms-field {
+        flex-wrap: wrap;
+      }
+      .terms-field .field-error.is-visible {
+        display: block;
+        flex-basis: 100%;
+        margin-left: 23px;
+        margin-top: 6px;
+      }
       @media (max-width: 480px) {
         .form-grid-2 { grid-template-columns: 1fr; }
+        .field-error.is-visible {
+          display: block;
+          margin-top: -4px;
+          margin-bottom: 6px;
+        }
       }
     </style>
   </head>
   <body>
     <div class="auth-page" style="padding: 40px 16px">
-      <div class="auth-card" style="max-width: 500px">
+      <div class="auth-card" style="max-width: 600px">
         <!-- Logo -->
         <div class="auth-logo">
           <a th:href="@{/}" class="logo" style="justify-content: center">
@@ -142,7 +175,7 @@
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          <span th:text="${error}">Đã xảy ra lỗi.</span>
+          <span th:text="${param.error != null ? param.error[0] : 'Đã xảy ra lỗi.'}">Đã xảy ra lỗi.</span>
         </div>
 
         <!-- Register Form -->
@@ -224,6 +257,8 @@
                 type="tel"
                 name="phone"
                 th:value="${param.phone}"
+                autocomplete="tel"
+                required
               />
             </div>
           </div>
@@ -338,6 +373,7 @@
           </div>
 
           <div
+            class="terms-field"
             style="
               display: flex;
               align-items: flex-start;
@@ -377,6 +413,7 @@
               >
               của VitaStore
             </label>
+            <span class="field-error" data-field="agreeTerms">Vui lòng đồng ý điều khoản</span>
           </div>
 
           <button type="submit" class="btn btn-primary btn-full btn-lg">
@@ -397,12 +434,92 @@
         input.type = input.type === "password" ? "text" : "password";
       }
 
+      const REQUIRED_FIELD_MESSAGE = "Vui lòng nhập đầy đủ thông tin";
+      const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      function setupRequiredFieldMessages() {
+        const form = document.getElementById("registerForm");
+        if (!form) return;
+
+        form.querySelectorAll("input[required]").forEach((input) => {
+          const group = input.closest(".form-group") || input.closest(".terms-field");
+          const label = group?.querySelector(".form-label");
+          if (!group) return;
+
+          let error = group.querySelector(`.field-error[data-field="${input.name}"]`);
+          if (!error && label) {
+            error = document.createElement("span");
+            error.className = "field-error";
+            error.dataset.field = input.name;
+            error.textContent = REQUIRED_FIELD_MESSAGE;
+            label.insertAdjacentElement("afterend", error);
+          }
+
+          input.addEventListener("input", () => updateFieldMessage(input));
+          input.addEventListener("blur", () => updateFieldMessage(input));
+        });
+      }
+
+      function getFieldMessage(input) {
+        const value = input.value.trim();
+
+        if (input.type === "checkbox") {
+          return input.required && !input.checked ? "Vui lòng đồng ý điều khoản" : "";
+        }
+
+        if (input.required && value === "") {
+          return REQUIRED_FIELD_MESSAGE;
+        }
+
+        if (input.type === "email" && value !== "" && !EMAIL_PATTERN.test(value)) {
+          return "Email không hợp lệ";
+        }
+
+        if (input.minLength > 0 && value !== "" && value.length < input.minLength) {
+          return `Vui lòng nhập tối thiểu ${input.minLength} ký tự`;
+        }
+
+        if (input.name === "confirmPassword" && value !== "" && pwdInput && value !== pwdInput.value) {
+          return "Mật khẩu xác nhận không khớp";
+        }
+
+        return "";
+      }
+
+      function updateFieldMessage(input) {
+        const group = input.closest(".form-group") || input.closest(".terms-field");
+        const error = group?.querySelector(`.field-error[data-field="${input.name}"]`);
+        const message = getFieldMessage(input);
+
+        if (error) {
+          error.textContent = message;
+          error.classList.toggle("is-visible", message !== "");
+        }
+        input.classList.toggle("field-invalid", message !== "");
+
+        return message === "";
+      }
+
+      function validateFormFields(form) {
+        let isValid = true;
+        form.querySelectorAll("input[required]").forEach((input) => {
+          if (!updateFieldMessage(input)) {
+            isValid = false;
+          }
+        });
+        return isValid;
+      }
+
+      setupRequiredFieldMessages();
+
       // Password strength
       const pwdInput = document.getElementById("regPwd");
       const pwd2Input = document.getElementById("regPwd2");
       if (pwdInput) {
         pwdInput.addEventListener("input", () => {
           const val = pwdInput.value;
+          updateFieldMessage(pwdInput);
+          if (pwd2Input) updateFieldMessage(pwd2Input);
           const bar = document.getElementById("pwdStrengthBar");
           const text = document.getElementById("pwdStrengthText");
           if (!bar || !text) return;
@@ -437,15 +554,17 @@
           if (!msg) return;
           if (pwd2Input.value === "") {
             msg.textContent = "";
+            updateFieldMessage(pwd2Input);
             return;
           }
           if (pwd2Input.value === pwdInput.value) {
             msg.textContent = "✓ Mật khẩu khớp";
             msg.style.color = "var(--color-green)";
           } else {
-            msg.textContent = "✕ Mật khẩu không khớp";
+            msg.textContent = "";
             msg.style.color = "#c62828";
           }
+          updateFieldMessage(pwd2Input);
         });
       }
 
@@ -453,11 +572,10 @@
       document
         .getElementById("registerForm")
         ?.addEventListener("submit", (e) => {
-          const pwd = document.getElementById("regPwd").value;
-          const pwd2 = document.getElementById("regPwd2").value;
-          if (pwd !== pwd2) {
+          const form = e.currentTarget;
+          const formFieldsValid = validateFormFields(form);
+          if (!formFieldsValid) {
             e.preventDefault();
-            alert("Mật khẩu xác nhận không khớp!");
           }
         });
     </script>

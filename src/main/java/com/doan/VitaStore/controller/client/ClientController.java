@@ -10,7 +10,9 @@ import com.doan.VitaStore.dto.response.client.OrderItemResponse;
 import com.doan.VitaStore.dto.response.client.OrderResponse;
 import com.doan.VitaStore.service.AddressService;
 import com.doan.VitaStore.service.OrderService;
+import com.doan.VitaStore.service.VNPAYService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +50,9 @@ public class ClientController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private VNPAYService vnpayService;
 
     @GetMapping("/")
     public String home() {
@@ -134,7 +139,9 @@ public class ClientController {
     @PostMapping("/checkout/place-order")
     public String placeOrder(@RequestParam("cartData") String cartData,
             @RequestParam("addressId") int addressId,
+            @RequestParam(value = "paymentMethod", defaultValue = "COD") String paymentMethod,
             @RequestParam(value = "note", required = false) String note,
+            HttpServletRequest request,
             RedirectAttributes ra) {
         UserEntity user = getCurrentUser();
         if (user == null)
@@ -145,7 +152,23 @@ public class ClientController {
         }
         try {
             OrderResponse order = orderService.placeOrder(
-                    user.getUserId(), addressId, "COD", note, cartData);
+                    user.getUserId(), addressId, paymentMethod, note, cartData);
+
+            if ("VNPAY".equalsIgnoreCase(paymentMethod)) {
+                String ipAddress = request.getRemoteAddr();
+                if ("0:0:0:0:0:0:0:1".equals(ipAddress) || "127.0.0.1".equals(ipAddress)) {
+                    ipAddress = "127.0.0.1";
+                }
+                String orderInfo = "Thanh toan don hang " + order.getOrderCode();
+                String paymentUrl = vnpayService.createPaymentUrl(
+                        order.getTotalAmount().longValue(),
+                        orderInfo,
+                        String.valueOf(order.getId()),
+                        ipAddress
+                );
+                return "redirect:" + paymentUrl;
+            }
+
             ra.addFlashAttribute("orderSuccess",
                     "Đặt hàng thành công! Mã đơn: " + order.getOrderCode());
         } catch (Exception e) {
@@ -488,28 +511,74 @@ public class ClientController {
 
     @PostMapping("/auth/register")
     public String handleRegister(
-            @RequestParam("firstName") String firstName,
-            @RequestParam("lastName") String lastName,
-            @RequestParam("email") String email,
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "lastName", required = false) String lastName,
+            @RequestParam(value = "email", required = false) String email,
             @RequestParam(value = "phone", required = false) String phone,
-            @RequestParam("password") String password,
-            @RequestParam("confirmPassword") String confirmPassword,
+            @RequestParam(value = "password", required = false) String password,
+            @RequestParam(value = "confirmPassword", required = false) String confirmPassword,
+            @RequestParam(value = "agreeTerms", required = false) String agreeTerms,
             RedirectAttributes redirectAttributes) {
 
-        if (!password.equals(confirmPassword)) {
-            redirectAttributes.addAttribute("error", "Mật khẩu xác nhận không khớp.");
-            return "redirect:/auth/register";
+        addRegisterFormAttributes(redirectAttributes, firstName, lastName, email, phone);
+
+        String normalizedFirstName = normalize(firstName);
+        String normalizedLastName = normalize(lastName);
+        String normalizedEmail = normalize(email);
+        String normalizedPhone = normalize(phone);
+        String normalizedPassword = normalize(password);
+        String normalizedConfirmPassword = normalize(confirmPassword);
+
+        if (normalizedFirstName.isBlank()
+                || normalizedLastName.isBlank()
+                || normalizedEmail.isBlank()
+                || normalizedPhone.isBlank()
+                || normalizedPassword.isBlank()
+                || normalizedConfirmPassword.isBlank()) {
+            return registerError(redirectAttributes, "Vui lòng nhập đầy đủ thông tin đăng ký.");
         }
 
-        if (userService.existsByEmail(email)) {
-            redirectAttributes.addAttribute("error", "Email đã được đăng ký.");
-            return "redirect:/auth/register";
+        if (!normalizedEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            return registerError(redirectAttributes, "Email không hợp lệ.");
         }
 
-        String fullName = firstName + " " + lastName;
-        userService.registerUser(fullName, email, phone, password);
+        if (normalizedPassword.length() < 8) {
+            return registerError(redirectAttributes, "Mật khẩu phải có ít nhất 8 ký tự.");
+        }
+
+        if (!normalizedPassword.equals(normalizedConfirmPassword)) {
+            return registerError(redirectAttributes, "Mật khẩu xác nhận không khớp.");
+        }
+
+        if (!"on".equalsIgnoreCase(normalize(agreeTerms))) {
+            return registerError(redirectAttributes, "Vui lòng đồng ý điều khoản dịch vụ và chính sách bảo mật.");
+        }
+
+        if (userService.existsByEmail(normalizedEmail)) {
+            return registerError(redirectAttributes, "Email đã được đăng ký.");
+        }
+
+        String fullName = normalizedFirstName + " " + normalizedLastName;
+        userService.registerUser(fullName, normalizedEmail, normalizedPhone, normalizedPassword);
 
         redirectAttributes.addFlashAttribute("success", "Đăng ký thành công! Chào mừng bạn đến với VitaStore.");
         return "redirect:/auth/login";
+    }
+
+    private void addRegisterFormAttributes(RedirectAttributes redirectAttributes,
+            String firstName, String lastName, String email, String phone) {
+        redirectAttributes.addAttribute("firstName", normalize(firstName));
+        redirectAttributes.addAttribute("lastName", normalize(lastName));
+        redirectAttributes.addAttribute("email", normalize(email));
+        redirectAttributes.addAttribute("phone", normalize(phone));
+    }
+
+    private String registerError(RedirectAttributes redirectAttributes, String message) {
+        redirectAttributes.addAttribute("error", message);
+        return "redirect:/auth/register";
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
     }
 }

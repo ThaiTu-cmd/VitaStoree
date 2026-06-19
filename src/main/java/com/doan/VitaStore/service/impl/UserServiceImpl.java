@@ -25,11 +25,26 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserEntity registerUser(String fullName, String email, String phone, String password) {
+        String normalizedFullName = normalize(fullName);
+        String normalizedEmail = normalize(email);
+        String normalizedPhone = normalize(phone);
+        String normalizedPassword = normalize(password);
+
+        if (normalizedFullName.isBlank()
+                || normalizedEmail.isBlank()
+                || normalizedPhone.isBlank()
+                || normalizedPassword.isBlank()) {
+            throw new IllegalArgumentException("Vui lòng nhập đầy đủ thông tin đăng ký.");
+        }
+        if (normalizedPassword.length() < 8) {
+            throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự.");
+        }
+
         UserEntity userEntity = new UserEntity();
-        userEntity.setFullName(fullName);
-        userEntity.setEmail(email);
-        userEntity.setPhone(phone);
-        userEntity.setPasswordHash(passwordEncoder.encode(password));
+        userEntity.setFullName(normalizedFullName);
+        userEntity.setEmail(normalizedEmail);
+        userEntity.setPhone(normalizedPhone);
+        userEntity.setPasswordHash(passwordEncoder.encode(normalizedPassword));
         userEntity.setRole(Role.USER);
         userEntity.setStatus(Status.ACTIVE);
         userEntity.setCreatedAt(LocalDateTime.now());
@@ -156,4 +171,7 @@ public class UserServiceImpl implements UserService {
         return toAdminUserResponse(userRepository.save(user));
     }
 
+    private String normalize(String value) {
+        return value == null ? "" : value.trim();
+    }
 }
