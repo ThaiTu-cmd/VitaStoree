@@ -4,6 +4,9 @@ services:
     container_name: vitastore-mysql
     restart: unless-stopped
     env_file: .env
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:

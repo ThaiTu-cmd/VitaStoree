@@ -1,3 +1,6 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET CHARACTER SET utf8mb4;
+
 DROP DATABASE IF EXISTS EcommerceDB;
 CREATE DATABASE EcommerceDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE EcommerceDB;

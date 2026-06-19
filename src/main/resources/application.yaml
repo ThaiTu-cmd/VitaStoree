@@ -5,7 +5,7 @@ server:
 
 spring:
   datasource:
-    url: "jdbc:mysql://localhost:3306/EcommerceDB"
+    url: "jdbc:mysql://localhost:3306/EcommerceDB?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=UTC"
     username: root
     password: root
   jpa:
