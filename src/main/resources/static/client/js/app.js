@@ -518,6 +518,7 @@ const initAddToCartButtons = () => {
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-add-cart]");
     if (!btn) return;
+    if (btn.disabled) return;
     const id = btn.dataset.id;
     const name = btn.dataset.name;
     const price = parseFloat(btn.dataset.price);

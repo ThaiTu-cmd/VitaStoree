@@ -36,6 +36,15 @@ const API = {
       "Content-Type": "application/json",
     };
   },
+  async _errorMessage(response, fallback) {
+    try {
+      const body = await response.clone().json();
+      return body.error || body.message || fallback;
+    } catch (e) {
+      const text = await response.text();
+      return text || fallback;
+    }
+  },
 
   // ── ORDERS ──────────────────────────────────────────────────
   async getOrders() {
@@ -138,7 +147,7 @@ const API = {
       headers: this._h(),
       body: JSON.stringify(d),
     });
-    if (!res.ok) throw new Error("Không thể tạo sản phẩm");
+    if (!res.ok) throw new Error(await this._errorMessage(res, "Không thể tạo sản phẩm"));
     return res.json();
   },
   async updateProduct(id, d) {
@@ -147,7 +156,7 @@ const API = {
       headers: this._h(),
       body: JSON.stringify(d),
     });
-    if (!res.ok) throw new Error("Không thể cập nhật sản phẩm");
+    if (!res.ok) throw new Error(await this._errorMessage(res, "Không thể cập nhật sản phẩm"));
     return res.json();
   },
   async deleteProduct(id) {

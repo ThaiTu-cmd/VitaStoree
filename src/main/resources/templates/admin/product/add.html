@@ -232,7 +232,7 @@
         // Load categories
         const cats = await API.getCategories();
         const sel = document.getElementById("fCategory");
-        cats.forEach((c) => {
+        cats.filter((c) => !c.deletedAt).forEach((c) => {
           const opt = document.createElement("option");
           opt.value = c.id;
           opt.textContent = `${c.id} — ${c.name}`;
@@ -277,34 +277,55 @@
         const btn = document.getElementById("submitLabel");
         btn.textContent = "⏳ Đang lưu...";
 
-        const data = {
-          name: document.getElementById("fName").value.trim(),
-          description: document.getElementById("fDesc").value.trim(),
-          categoryId: +document.getElementById("fCategory").value,
-          price: +document.getElementById("fPrice").value,
-          stockQuantity: +document.getElementById("fStock").value,
-          imageUrl: document.getElementById("fImageUrl").value.trim(),
-          status: document.getElementById("fStatus").value,
-        };
+        const name = document.getElementById("fName").value.trim();
+        const categoryValue = document.getElementById("fCategory").value;
+        const priceValue = document.getElementById("fPrice").value;
+        const stockValue = document.getElementById("fStock").value;
 
-        if (!data.name || !data.categoryId || !data.price) {
+        if (!name || !categoryValue || priceValue === "" || stockValue === "") {
           Utils.toast("Vui lòng điền đầy đủ thông tin bắt buộc!", "error");
           btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
           return;
         }
 
-        if (editMode) {
-          await API.updateProduct(editId, data);
-          Utils.toast("Đã cập nhật sản phẩm thành công!");
-        } else {
-          await API.createProduct(data);
-          Utils.toast("Đã thêm sản phẩm mới!");
-          document.getElementById("fName").value = "";
-          document.getElementById("fDesc").value = "";
-          document.getElementById("fPrice").value = "";
-          document.getElementById("fStock").value = "";
-          document.getElementById("fImageUrl").value = "";
-          document.getElementById("fStatus").value = "ACTIVE";
+        const data = {
+          name,
+          description: document.getElementById("fDesc").value.trim(),
+          categoryId: Number(categoryValue),
+          price: Number(priceValue),
+          stockQuantity: Number(stockValue),
+          imageUrl: document.getElementById("fImageUrl").value.trim(),
+          status: document.getElementById("fStatus").value,
+        };
+
+        if (!Number.isFinite(data.price) || data.price < 0) {
+          Utils.toast("Giá bán không được nhỏ hơn 0.", "error");
+          btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
+          return;
+        }
+
+        if (!Number.isInteger(data.stockQuantity) || data.stockQuantity < 0) {
+          Utils.toast("Tồn kho không được nhỏ hơn 0.", "error");
+          btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
+          return;
+        }
+
+        try {
+          if (editMode) {
+            await API.updateProduct(editId, data);
+            Utils.toast("Đã cập nhật sản phẩm thành công!");
+          } else {
+            await API.createProduct(data);
+            Utils.toast("Đã thêm sản phẩm mới!");
+            document.getElementById("fName").value = "";
+            document.getElementById("fDesc").value = "";
+            document.getElementById("fPrice").value = "";
+            document.getElementById("fStock").value = "";
+            document.getElementById("fImageUrl").value = "";
+            document.getElementById("fStatus").value = "ACTIVE";
+          }
+        } catch (error) {
+          Utils.toast(error.message || "Không thể lưu sản phẩm.", "error");
         }
         btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
       }

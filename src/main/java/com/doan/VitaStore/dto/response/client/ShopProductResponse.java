@@ -13,10 +13,11 @@ public class ShopProductResponse {
     private int reviewCount;
     private boolean isNew;
     private BigDecimal originalPrice;
+    private int stockQuantity;
 
     public ShopProductResponse() {}
 
-    public ShopProductResponse(int id, String name, String imageUrl, String categoryName, BigDecimal price) {
+    public ShopProductResponse(int id, String name, String imageUrl, String categoryName, BigDecimal price, int stockQuantity) {
         this.id = id;
         this.name = name;
         this.imageUrl = imageUrl;
@@ -27,6 +28,7 @@ public class ShopProductResponse {
         this.reviewCount = 0;
         this.isNew = false;
         this.originalPrice = null;
+        this.stockQuantity = stockQuantity;
     }
 
     public int getId() { return id; }
@@ -49,4 +51,6 @@ public class ShopProductResponse {
     public void setNew(boolean aNew) { isNew = aNew; }
     public BigDecimal getOriginalPrice() { return originalPrice; }
     public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    public int getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(int stockQuantity) { this.stockQuantity = stockQuantity; }
 }

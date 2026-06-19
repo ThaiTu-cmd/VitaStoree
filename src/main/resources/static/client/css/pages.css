@@ -14,6 +14,10 @@
   box-shadow: var(--shadow-lg);
   transform: translateY(-4px);
 }
+.product-card-out-of-stock .product-card-img img {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
 .product-card-link {
   text-decoration: none;
   color: inherit;
@@ -78,6 +82,14 @@
   font-size: var(--font-size-xs);
   color: var(--color-grey-500);
 }
+.product-stock {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-grey-600);
+}
+.product-stock-empty {
+  color: var(--color-danger);
+}
 .product-rating {
   display: flex;
   align-items: center;
@@ -124,6 +136,19 @@
   background: var(--color-green-dark);
   box-shadow: 0 0 18px rgba(76, 175, 80, 0.4), 0 4px 12px rgba(76, 175, 80, 0.25);
   transform: translateY(-1px);
+}
+.add-to-cart-btn:disabled,
+.add-to-cart-btn-disabled {
+  background: var(--color-grey-300);
+  color: var(--color-grey-600);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.add-to-cart-btn:disabled:hover,
+.add-to-cart-btn-disabled:hover {
+  background: var(--color-grey-300);
+  box-shadow: none;
+  transform: none;
 }
 
 /* ===== PRODUCT GRID ===== */

@@ -139,6 +139,7 @@ h6 { font-size: var(--font-size-base); font-weight: 500; }
 .badge-orange { background: #fff3e0; color: #e65100; }
 .badge-blue { background: var(--color-accent-light); color: var(--color-accent); }
 .badge-red { background: #ffebee; color: var(--color-danger); }
+.badge-gray { background: var(--color-grey-200); color: var(--color-grey-700); }
 
 .form-group { margin-bottom: var(--space-5); }
 .form-label {

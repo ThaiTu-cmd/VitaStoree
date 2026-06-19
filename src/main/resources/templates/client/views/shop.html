@@ -106,15 +106,20 @@
 
             <!-- Product Grid -->
             <div class="product-grid" id="product-grid">
-               <div class="product-card" th:each="product : ${products}">
+               <div
+                 class="product-card"
+                 th:each="product : ${products}"
+                 th:classappend="${product.stockQuantity <= 0} ? ' product-card-out-of-stock'"
+               >
                 <div class="product-card-badge">
+                  <span class="badge badge-gray" th:if="${product.stockQuantity <= 0}">Hết hàng</span>
                   <span
                     class="badge badge-orange"
-                    th:if="${product.discountPercent > 0}"
+                    th:if="${product.stockQuantity > 0 and product.discountPercent > 0}"
                     th:text="${'-' + product.discountPercent + '%'}"
                     >-20%</span
                   >
-                  <span class="badge badge-blue" th:if="${product.isNew}"
+                  <span class="badge badge-blue" th:if="${product.stockQuantity > 0 and product.isNew}"
                     >Mới</span
                   >
                 </div>
@@ -138,6 +143,13 @@
                   </div>
                   <div class="product-brand" th:text="${product.brand}">
                     Thương hiệu
+                  </div>
+                  <div
+                    class="product-stock"
+                    th:classappend="${product.stockQuantity <= 0} ? ' product-stock-empty'"
+                    th:text="${product.stockQuantity <= 0 ? 'Hết hàng' : 'Còn lại: ' + product.stockQuantity}"
+                  >
+                    Còn lại: 0
                   </div>
                   <div class="product-rating">
                     <span class="stars">★★★★★</span>
@@ -167,6 +179,8 @@
                   <button
                     class="add-to-cart-btn"
                     data-add-cart
+                    th:disabled="${product.stockQuantity <= 0}"
+                    th:classappend="${product.stockQuantity <= 0} ? ' add-to-cart-btn-disabled'"
                     th:data-id="${product.id}"
                     th:data-name="${product.name}"
                     th:data-price="${product.price}"
@@ -187,7 +201,7 @@
                         d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
                       />
                     </svg>
-                    Thêm vào giỏ
+                    <span th:text="${product.stockQuantity <= 0 ? 'Hết hàng' : 'Thêm vào giỏ'}">Thêm vào giỏ</span>
                   </button>
                 </div>
               </div>
