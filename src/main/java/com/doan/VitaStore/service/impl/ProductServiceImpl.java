@@ -51,21 +51,20 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse createProduct(ProductRequest request) {
+        validateProductRequest(request);
+        CategoriesEntity category = findActiveCategory(request.getCategoryId());
+        ProductStatus status = parseProductStatus(request.getStatus());
+
         ProductsEntity product = new ProductsEntity();
 
-        product.setProductName(request.getName());
+        product.setProductName(request.getName().trim());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setQuantity(request.getStockQuantity());
         product.setImageURL(request.getImageUrl());
-        product.setStatus(ProductStatus.valueOf(request.getStatus()));
+        product.setStatus(status);
+        product.setCategory(category);
         product.setDeletedAt(null);
-
-        if (request.getCategoryId() > 0) {
-            CategoriesEntity category = categoryRepository.findById((long) request.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
-            product.setCategory(category);
-        }
 
         ProductsEntity saved = productRepository.save(product);
         return toResponse(saved);
@@ -73,21 +72,20 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse updateProduct(int id, ProductRequest request) {
+        validateProductRequest(request);
+        CategoriesEntity category = findActiveCategory(request.getCategoryId());
+        ProductStatus status = parseProductStatus(request.getStatus());
+
         ProductsEntity product = productRepository.findById((long) id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        product.setProductName(request.getName());
+        product.setProductName(request.getName().trim());
         product.setDescription(request.getDescription());
         product.setPrice(request.getPrice());
         product.setQuantity(request.getStockQuantity());
         product.setImageURL(request.getImageUrl());
-        product.setStatus(ProductStatus.valueOf(request.getStatus()));
-
-        if (request.getCategoryId() > 0) {
-            CategoriesEntity category = categoryRepository.findById((long) request.getCategoryId())
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
-            product.setCategory(category);
-        }
+        product.setStatus(status);
+        product.setCategory(category);
 
         ProductsEntity saved = productRepository.save(product);
         return toResponse(saved);
@@ -176,6 +174,44 @@ public class ProductServiceImpl implements ProductService {
         return toResponse(productRepository.save(product));
     }
 
+    private void validateProductRequest(ProductRequest request) {
+        if (request == null) {
+            throw new RuntimeException("Dữ liệu sản phẩm không hợp lệ");
+        }
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new RuntimeException("Tên sản phẩm không được để trống");
+        }
+        if (request.getCategoryId() <= 0) {
+            throw new RuntimeException("Vui lòng chọn danh mục sản phẩm");
+        }
+        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Giá bán không được nhỏ hơn 0");
+        }
+        if (request.getStockQuantity() < 0) {
+            throw new RuntimeException("Tồn kho không được nhỏ hơn 0");
+        }
+    }
+
+    private CategoriesEntity findActiveCategory(int categoryId) {
+        CategoriesEntity category = categoryRepository.findById((long) categoryId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy danh mục"));
+        if (category.getDeletedAt() != null) {
+            throw new RuntimeException("Danh mục đã bị xóa, vui lòng chọn danh mục khác");
+        }
+        return category;
+    }
+
+    private ProductStatus parseProductStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return ProductStatus.ACTIVE;
+        }
+        try {
+            return ProductStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Trạng thái sản phẩm không hợp lệ");
+        }
+    }
+
     private ShopProductResponse toShopResponse(ProductsEntity product) {
         String img = product.getImageURL();
         if (img != null && !img.startsWith("http")) {
@@ -186,7 +222,8 @@ public class ProductServiceImpl implements ProductService {
                 product.getProductName(),
                 img,
                 product.getCategory() != null ? product.getCategory().getCategoryName() : null,
-                product.getPrice()
+                product.getPrice(),
+                product.getQuantity()
         );
     }
 

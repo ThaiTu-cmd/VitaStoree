@@ -1,6 +1,6 @@
 package com.doan.VitaStore.controller;
 
-import com.doan.VitaStore.service.OrderService;
+import com.doan.VitaStore.service.PaymentService;
 import com.doan.VitaStore.service.VNPAYService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ public class VNPAYController {
     private VNPAYService vnpayService;
 
     @Autowired
-    private OrderService orderService;
+    private PaymentService paymentService;
 
     @GetMapping("/return")
     public String returnUrl(HttpServletRequest request, Model model) {
@@ -40,7 +40,7 @@ public class VNPAYController {
         if (isValid && "00".equals(responseCode)) {
             try {
                 int orderIdInt = Integer.parseInt(orderId);
-                orderService.updatePaymentStatus(orderIdInt, transactionNo, "SUCCESS");
+                paymentService.updatePaymentStatus(orderIdInt, transactionNo, "SUCCESS");
             } catch (Exception ignored) {}
             model.addAttribute("success", true);
             model.addAttribute("message", "Thanh toán VNPAY thành công!");
@@ -48,7 +48,7 @@ public class VNPAYController {
             if (isValid) {
                 try {
                     int orderIdInt = Integer.parseInt(orderId);
-                    orderService.updatePaymentStatus(orderIdInt, transactionNo, "FAILED");
+                    paymentService.updatePaymentStatus(orderIdInt, transactionNo, "FAILED");
                 } catch (Exception ignored) {}
             }
             model.addAttribute("success", false);
@@ -83,10 +83,10 @@ public class VNPAYController {
         try {
             int orderIdInt = Integer.parseInt(orderId);
             if ("00".equals(responseCode)) {
-                orderService.updatePaymentStatus(orderIdInt, transactionNo, "SUCCESS");
+                paymentService.updatePaymentStatus(orderIdInt, transactionNo, "SUCCESS");
                 return "{\"RspCode\":\"00\",\"Message\":\"Confirm Success\"}";
             } else {
-                orderService.updatePaymentStatus(orderIdInt, transactionNo, "FAILED");
+                paymentService.updatePaymentStatus(orderIdInt, transactionNo, "FAILED");
                 return "{\"RspCode\":\"00\",\"Message\":\"Payment failed\"}";
             }
         } catch (Exception e) {

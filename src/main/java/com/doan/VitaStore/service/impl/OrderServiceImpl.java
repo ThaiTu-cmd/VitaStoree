@@ -8,10 +8,10 @@ import com.doan.VitaStore.dto.response.client.OrderItemResponse;
 import com.doan.VitaStore.dto.response.client.OrderResponse;
 import com.doan.VitaStore.entity.*;
 import com.doan.VitaStore.enums.OrderStatus;
-import com.doan.VitaStore.enums.PaymentMethod;
 import com.doan.VitaStore.enums.PaymentStatus;
 import com.doan.VitaStore.repository.*;
 import com.doan.VitaStore.service.OrderService;
+import com.doan.VitaStore.service.PaymentService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +26,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired private OrdersRepository ordersRepository;
     @Autowired private OrderItemsRepository orderItemsRepository;
-    @Autowired private PaymentsRepository paymentsRepository;
     @Autowired private OrderHistoryRepository orderHistoryRepository;
     @Autowired private ProductsRepository productsRepository;
     @Autowired private UserAddressesRepository addressRepository;
     @Autowired private CartItemsRepository cartItemsRepository;
     @Autowired private CartsRepository cartsRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired private PaymentService paymentService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -93,20 +93,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        PaymentMethod pm = PaymentMethod.COD;
-        try {
-            if (paymentMethod != null && !paymentMethod.isBlank()) {
-                pm = PaymentMethod.valueOf(paymentMethod.toUpperCase());
-            }
-        } catch (Exception ignored) {}
-
-        PaymentsEntity payment = new PaymentsEntity();
-        payment.setOrder(order);
-        payment.setPaymentMethod(pm);
-        payment.setAmount(totalAmount);
-        payment.setPaymentStatus(PaymentStatus.PENDING);
-        payment.setCreatedAt(LocalDateTime.now());
-        paymentsRepository.save(payment);
+        paymentService.createPendingPayment(order, paymentMethod, totalAmount);
 
         OrderHistoryEntity history = new OrderHistoryEntity();
         history.setOrder(order);
@@ -286,17 +273,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public void updatePaymentStatus(int orderId, String transactionNo, String status) {
-        PaymentsEntity payment = paymentsRepository.findByOrderOrderId(orderId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thanh toán cho đơn hàng"));
-        PaymentStatus ps;
-        try { ps = PaymentStatus.valueOf(status.toUpperCase()); }
-        catch (Exception e) { throw new RuntimeException("Trạng thái thanh toán không hợp lệ"); }
-        payment.setPaymentStatus(ps);
-        payment.setTransactionNo(transactionNo);
-        if (ps == PaymentStatus.SUCCESS) {
-            payment.setPaidAt(LocalDateTime.now());
-        }
-        paymentsRepository.save(payment);
+        paymentService.updatePaymentStatus(orderId, transactionNo, status);
     }
 
     @Override @Transactional

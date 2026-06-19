@@ -520,8 +520,35 @@
 .order-btn:disabled { opacity:0.4; cursor:not-allowed; }
 
 @media (max-width: 700px) {
-  .order-table th:nth-child(3),
-  .order-table td:nth-child(3) { display: none; }
+  .order-table { display: block; }
+  .order-table thead { display: none; }
+  .order-table tbody { display: block; }
+  .order-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .order-table td {
+    display: block;
+    padding: 2px 0;
+    border: none;
+    font-size: var(--font-size-sm);
+  }
+  .order-table td:nth-child(1) { grid-column: 1 / -1; }
+  .order-table td:nth-child(2) { grid-column: 1 / -1; }
+  .order-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-grey-400);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+  .item-info { flex-direction: column; align-items: flex-start; }
   .order-footer { flex-direction: column; align-items: stretch; }
   .order-total-line { align-items: flex-start; }
   .order-actions { justify-content: flex-end; }
