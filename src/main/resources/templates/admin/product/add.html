@@ -160,10 +160,21 @@
 
                 <div class="form-group">
                   <label class="form-label">Trạng thái</label>
-                  <select class="form-control" id="fStatus">
-                    <option value="ACTIVE">● Active</option>
-                    <option value="INACTIVE">● Inactive</option>
-                  </select>
+                  <input type="hidden" id="fStatus" value="ACTIVE" />
+                  <div class="status-toggle" id="fStatusControl">
+                    <label class="toggle status-toggle-switch" for="fStatusToggle">
+                      <input type="checkbox" id="fStatusToggle" checked />
+                      <span class="toggle-slider"></span>
+                    </label>
+                    <div class="status-toggle-copy">
+                      <div class="status-toggle-label" id="fStatusLabel">
+                        Đang bán
+                      </div>
+                      <div class="form-hint" id="fStatusHint">
+                        Sản phẩm đang được hiển thị trên cửa hàng.
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -228,6 +239,24 @@
       let editMode = false;
       let editId = null;
 
+      function setProductStatus(status) {
+        const normalized = status === "INACTIVE" ? "INACTIVE" : "ACTIVE";
+        const isActive = normalized === "ACTIVE";
+        const statusInput = document.getElementById("fStatus");
+        const statusToggle = document.getElementById("fStatusToggle");
+        const statusControl = document.getElementById("fStatusControl");
+        const statusLabel = document.getElementById("fStatusLabel");
+        const statusHint = document.getElementById("fStatusHint");
+
+        statusInput.value = normalized;
+        statusToggle.checked = isActive;
+        statusControl.classList.toggle("is-inactive", !isActive);
+        statusLabel.textContent = isActive ? "Đang bán" : "Tạm ẩn";
+        statusHint.textContent = isActive
+          ? "Sản phẩm đang được hiển thị trên cửa hàng."
+          : "Sản phẩm bị ẩn khỏi cửa hàng nhưng vẫn lưu trong hệ thống.";
+      }
+
       async function initPage() {
         // Load categories
         const cats = await API.getCategories();
@@ -266,7 +295,7 @@
             document.getElementById("fStock").value = p.stockQuantity;
             document.getElementById("fDesc").value = p.description || "";
             document.getElementById("fImageUrl").value = p.imageUrl || "";
-            document.getElementById("fStatus").value = p.status || "ACTIVE";
+            setProductStatus(p.status || "ACTIVE");
             document.getElementById("showId").textContent = p.id;
             document.getElementById("showCatId").textContent = p.categoryId;
           }
@@ -322,7 +351,7 @@
             document.getElementById("fPrice").value = "";
             document.getElementById("fStock").value = "";
             document.getElementById("fImageUrl").value = "";
-            document.getElementById("fStatus").value = "ACTIVE";
+            setProductStatus("ACTIVE");
           }
         } catch (error) {
           Utils.toast(error.message || "Không thể lưu sản phẩm.", "error");
@@ -330,7 +359,14 @@
         btn.textContent = editMode ? "Cập nhật sản phẩm" : "Lưu sản phẩm";
       }
 
-      document.addEventListener("DOMContentLoaded", initPage);
+      document.addEventListener("DOMContentLoaded", () => {
+        const statusToggle = document.getElementById("fStatusToggle");
+        statusToggle.addEventListener("change", () => {
+          setProductStatus(statusToggle.checked ? "ACTIVE" : "INACTIVE");
+        });
+        setProductStatus("ACTIVE");
+        initPage();
+      });
     </script>
   </body>
 </html>
