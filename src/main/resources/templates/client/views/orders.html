@@ -112,6 +112,7 @@
                 <div class="orders-empty-desc">Bạn chưa có đơn hàng nào. Hãy mua sắm ngay!</div>
               </div>
             </div>
+            <div class="pagination" id="ordersPagination"></div>
           </div>
         </div>
       </main>
@@ -168,14 +169,19 @@
     <script>
       var pendingCancelId = null;
       var pendingReceiveId = null;
+      var currentPage = 1;
+      var filteredOrderCards = [];
+      var PAGE_SIZE = 5;
 
       function filterByTab(btn) {
         document.querySelectorAll('.order-tab').forEach(function(t) { t.classList.remove('active'); });
         btn.classList.add('active');
+        currentPage = 1;
         applyFilters();
       }
 
       function filterOrders() {
+        currentPage = 1;
         applyFilters();
       }
 
@@ -183,13 +189,54 @@
         var activeTab = document.querySelector('.order-tab.active');
         var filter = activeTab ? activeTab.dataset.filter : 'all';
         var q = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('.order-card').forEach(function(c) {
+        var cards = Array.prototype.slice.call(document.querySelectorAll('.order-card'));
+
+        filteredOrderCards = cards.filter(function(c) {
           var status = c.dataset.status;
           var code = c.querySelector('.order-code');
           var matchStatus = filter === 'all' || status === filter;
           var matchSearch = !q || (code && code.textContent.toLowerCase().includes(q));
-          c.style.display = (matchStatus && matchSearch) ? '' : 'none';
+          return matchStatus && matchSearch;
         });
+
+        cards.forEach(function(c) { c.style.display = 'none'; });
+
+        var totalPages = Math.ceil(filteredOrderCards.length / PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        var start = (currentPage - 1) * PAGE_SIZE;
+        filteredOrderCards.slice(start, start + PAGE_SIZE).forEach(function(c) {
+          c.style.display = '';
+        });
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        var pagination = document.getElementById('ordersPagination');
+        if (!pagination) return;
+
+        if (filteredOrderCards.length <= PAGE_SIZE) {
+          pagination.innerHTML = '';
+          pagination.style.display = 'none';
+          return;
+        }
+
+        var html = '<button type="button" class="page-btn" onclick="goToOrdersPage(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '>&#8249;</button>';
+        for (var i = 1; i <= totalPages; i++) {
+          html += '<button type="button" class="page-btn' + (i === currentPage ? ' active' : '') + '" onclick="goToOrdersPage(' + i + ')">' + i + '</button>';
+        }
+        html += '<button type="button" class="page-btn" onclick="goToOrdersPage(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled' : '') + '>&#8250;</button>';
+
+        pagination.style.display = '';
+        pagination.innerHTML = html;
+      }
+
+      function goToOrdersPage(page) {
+        var totalPages = Math.ceil(filteredOrderCards.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        applyFilters();
       }
 
       function showReceiveConfirm(btn) {
@@ -243,6 +290,8 @@
         hideCancelConfirm();
         form.submit();
       }
+
+      applyFilters();
 
       document.getElementById('cancelModal').addEventListener('click', function(e) {
         if (e.target === this) hideCancelConfirm();

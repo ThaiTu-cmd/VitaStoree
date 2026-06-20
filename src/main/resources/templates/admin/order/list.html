@@ -156,17 +156,25 @@
     <script th:src="@{/admin/js/admin.js}"></script>
     <script>
       let allOrders = [];
+      let filteredOrders = [];
+      let currentPage = 1;
+      const PAGE_SIZE = 10;
 
       async function loadOrders() {
         allOrders = await API.getOrders();
-        renderOrders(allOrders);
+        currentPage = 1;
+        filterOrders();
       }
 
-      function renderOrders(list) {
+      function renderPage() {
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filteredOrders.slice(start, start + PAGE_SIZE);
+        const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE) || 1;
+
         document.getElementById("orderCount").textContent =
-          `${list.length} đơn`;
-        document.getElementById("ordersBody").innerHTML = list.length
-          ? list
+          `${filteredOrders.length} đơn`;
+        document.getElementById("ordersBody").innerHTML = filteredOrders.length
+          ? pageItems
               .map(
                 (o) => `
         <tr>
@@ -185,20 +193,37 @@
               )
               .join("")
           : `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Không tìm thấy đơn hàng nào</td></tr>`;
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        let html = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>&#8249;</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+          html += `<button class="page-btn${i === currentPage ? ' active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>&#8250;</button>`;
+        document.getElementById("pagination").innerHTML = html;
+      }
+
+      function goToPage(page) {
+        const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderPage();
       }
 
       function filterOrders() {
         const q = document.getElementById("searchInput").value.toLowerCase();
         const st = document.getElementById("statusFilter").value;
-        renderOrders(
-          allOrders.filter(
-            (o) =>
-              (!q ||
-                o.orderCode.toLowerCase().includes(q) ||
-                o.username.toLowerCase().includes(q)) &&
-              (!st || o.status === st),
-          ),
+        filteredOrders = allOrders.filter(
+          (o) =>
+            (!q ||
+              o.orderCode.toLowerCase().includes(q) ||
+              o.username.toLowerCase().includes(q)) &&
+            (!st || o.status === st),
         );
+        currentPage = 1;
+        renderPage();
       }
 
       document.addEventListener("DOMContentLoaded", loadOrders);
