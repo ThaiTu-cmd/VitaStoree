@@ -390,10 +390,11 @@ const ShopFilter = (() => {
       // Price: single-choice
       const selectedPrice = document.querySelector('input[name="price"]:checked');
       if (selectedPrice) params.set("price", selectedPrice.value);
-      // Category: multi-select
-      document.querySelectorAll('input[name="category"]:checked').forEach((cb) => {
-        params.append("category", cb.value);
-      });
+      // Category: single-choice, click selected item again to clear.
+      const selectedCategory = document.querySelector(
+        'input[name="category"]:checked',
+      );
+      if (selectedCategory) params.set("category", selectedCategory.value);
       // Sort
     const sort = document.querySelector(".sort-select");
     if (sort && sort.value && sort.value !== "default") {
@@ -437,10 +438,24 @@ const ShopFilter = (() => {
       });
     }
 
+    const categoryChecked = filterForm.querySelectorAll(
+      'input[name="category"]:checked',
+    );
+    if (categoryChecked.length > 1) {
+      categoryChecked.forEach((el, idx) => {
+        if (idx > 0) el.checked = false;
+      });
+    }
+
     filterForm.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
       cb.addEventListener("change", () => {
         if (cb.name === "price" && cb.checked) {
           filterForm.querySelectorAll('input[name="price"]').forEach((el) => {
+            if (el !== cb) el.checked = false;
+          });
+        }
+        if (cb.name === "category" && cb.checked) {
+          filterForm.querySelectorAll('input[name="category"]').forEach((el) => {
             if (el !== cb) el.checked = false;
           });
         }
@@ -467,23 +482,10 @@ const ShopFilter = (() => {
       });
     }
 
-    // Clear all filters
+    // Clear category filters
     const clearBtn = document.querySelector(".filter-clear-all");
     if (clearBtn) {
       clearBtn.addEventListener("click", () => {
-        filterForm
-          .querySelectorAll('input[type="checkbox"]')
-          .forEach((cb) => (cb.checked = false));
-        if (sortSelect) sortSelect.value = "default";
-        updateResults();
-      });
-    }
-
-    // Clear category filters only
-    const clearCategoryBtn = document.querySelector(".filter-clear-category");
-    if (clearCategoryBtn) {
-      clearCategoryBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
         filterForm
           .querySelectorAll('input[name="category"]')
           .forEach((cb) => (cb.checked = false));
