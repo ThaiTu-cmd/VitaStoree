@@ -27,4 +27,8 @@ public interface UserService {
     UserResponse updateProfile(int userId, String fullName, String phone);
     UserResponse changePassword(int userId, String currentPassword, String newPassword);
     boolean verifyPassword(int userId, String rawPassword);
+
+    void forgotPassword(String email);
+    String verifyOtp(String email, String otp);
+    void resetPassword(String email, String token, String newPassword);
 }

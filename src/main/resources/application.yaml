@@ -17,6 +17,17 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
     show-sql: false
+mail:
+    host: smtp.gmail.com
+    port: 587
+    username: trunghuutran2005@gmail.com
+    password: hzct sqsf fmfy ndao
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 vnpay:
   tmn-code: 7X4X8515

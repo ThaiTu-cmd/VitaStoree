@@ -33,8 +33,15 @@
           <span th:text="${error}">Mã OTP không đúng.</span>
         </div>
 
+        <div th:if="${success}" style="background:#e8f5e9;color:#2e7d32;padding:10px 14px;border-radius:8px;font-size:0.875rem;margin-bottom:20px;display:flex;align-items:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <span th:text="${success}">Mã OTP đã được gửi.</span>
+        </div>
+
         <form th:action="@{/auth/verify-otp}" method="post">
-          <input type="hidden" name="email" th:value="${email}" />
+          <input type="hidden" name="email" th:value="${param.email != null ? param.email[0] : ''}" />
 
           <div class="form-group">
             <label class="form-label">Mã OTP</label>

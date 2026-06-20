@@ -2,18 +2,24 @@ package com.doan.VitaStore.service.impl;
 
 import com.doan.VitaStore.dto.request.admin.UserRequest;
 import com.doan.VitaStore.dto.response.admin.UserResponse;
+import com.doan.VitaStore.entity.PasswordResetTokenEntity;
 import com.doan.VitaStore.entity.UserEntity;
 import com.doan.VitaStore.enums.Role;
 import com.doan.VitaStore.enums.Status;
 import com.doan.VitaStore.exception.UserNotFoundException;
+import com.doan.VitaStore.repository.PasswordResetTokenRepository;
 import com.doan.VitaStore.repository.UserRepository;
+import com.doan.VitaStore.service.EmailService;
 import com.doan.VitaStore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -22,6 +28,14 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PasswordResetTokenRepository tokenRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    private final Random random = new Random();
 
     @Override
     public UserEntity registerUser(String fullName, String email, String phone, String password) {
@@ -169,6 +183,59 @@ public class UserServiceImpl implements UserService {
         user.setDeletedAt(null);
         user.setStatus(Status.ACTIVE);
         return toAdminUserResponse(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Email không tồn tại trong hệ thống."));
+
+        String otp = String.format("%06d", random.nextInt(999999));
+        String token = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
+
+        PasswordResetTokenEntity resetToken = new PasswordResetTokenEntity(
+                email, otp, token, now.plusMinutes(5), now.plusMinutes(15)
+        );
+        tokenRepository.save(resetToken);
+
+        emailService.sendOtpEmail(email, otp);
+    }
+
+    @Override
+    @Transactional
+    public String verifyOtp(String email, String otp) {
+        PasswordResetTokenEntity resetToken = tokenRepository
+                .findByEmailAndOtpAndUsedFalse(email, otp)
+                .orElseThrow(() -> new IllegalArgumentException("Mã OTP không đúng hoặc đã hết hạn."));
+
+        if (resetToken.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Mã OTP đã hết hạn.");
+        }
+
+        return resetToken.getToken();
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String email, String token, String newPassword) {
+        PasswordResetTokenEntity resetToken = tokenRepository
+                .findByEmailAndTokenAndUsedFalse(email, token)
+                .orElseThrow(() -> new IllegalArgumentException("Token không hợp lệ."));
+
+        if (resetToken.getTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Token đã hết hạn.");
+        }
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Email không tồn tại."));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        resetToken.setUsed(true);
+        tokenRepository.save(resetToken);
     }
 
     private String normalize(String value) {

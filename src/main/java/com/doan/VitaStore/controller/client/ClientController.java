@@ -509,6 +509,54 @@ public class ClientController {
         return "client/auth/verify-otp";
     }
 
+    @PostMapping("/auth/forgot-password")
+    public String handleForgotPassword(@RequestParam("email") String email,
+            RedirectAttributes ra) {
+        try {
+            userService.forgotPassword(email);
+            ra.addFlashAttribute("success", "Mã OTP đã được gửi đến email của bạn.");
+            return "redirect:/auth/verify-otp?email=" + email;
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/auth/forgot-password";
+        }
+    }
+
+    @PostMapping("/auth/verify-otp")
+    public String handleVerifyOtp(@RequestParam("email") String email,
+            @RequestParam("otp") String otp,
+            RedirectAttributes ra) {
+        try {
+            String token = userService.verifyOtp(email, otp);
+            return "redirect:/auth/reset-password?email=" + email + "&token=" + token;
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/auth/verify-otp?email=" + email;
+        }
+    }
+
+    @PostMapping("/auth/reset-password")
+    public String handleResetPassword(@RequestParam("email") String email,
+            @RequestParam("token") String token,
+            @RequestParam("password") String password,
+            @RequestParam("confirmPassword") String confirmPassword,
+            RedirectAttributes ra) {
+        try {
+            if (!password.equals(confirmPassword)) {
+                throw new IllegalArgumentException("Mật khẩu xác nhận không khớp.");
+            }
+            if (password.length() < 8) {
+                throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự.");
+            }
+            userService.resetPassword(email, token, password);
+            ra.addFlashAttribute("success", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.");
+            return "redirect:/auth/login";
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+            return "redirect:/auth/reset-password?email=" + email + "&token=" + token;
+        }
+    }
+
     @PostMapping("/auth/register")
     public String handleRegister(
             @RequestParam(value = "firstName", required = false) String firstName,
