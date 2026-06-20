@@ -468,13 +468,25 @@ const ShopFilter = (() => {
     }
 
     // Clear all filters
-    const clearBtn = document.querySelector(".filter-clear");
+    const clearBtn = document.querySelector(".filter-clear-all");
     if (clearBtn) {
       clearBtn.addEventListener("click", () => {
         filterForm
           .querySelectorAll('input[type="checkbox"]')
           .forEach((cb) => (cb.checked = false));
         if (sortSelect) sortSelect.value = "default";
+        updateResults();
+      });
+    }
+
+    // Clear category filters only
+    const clearCategoryBtn = document.querySelector(".filter-clear-category");
+    if (clearCategoryBtn) {
+      clearCategoryBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        filterForm
+          .querySelectorAll('input[name="category"]')
+          .forEach((cb) => (cb.checked = false));
         updateResults();
       });
     }
