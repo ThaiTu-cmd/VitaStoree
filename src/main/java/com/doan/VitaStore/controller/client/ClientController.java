@@ -30,9 +30,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.util.UriUtils;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 public class ClientController {
@@ -512,10 +515,11 @@ public class ClientController {
     @PostMapping("/auth/forgot-password")
     public String handleForgotPassword(@RequestParam("email") String email,
             RedirectAttributes ra) {
+        String normalizedEmail = normalize(email);
         try {
-            userService.forgotPassword(email);
+            userService.forgotPassword(normalizedEmail);
             ra.addFlashAttribute("success", "Mã OTP đã được gửi đến email của bạn.");
-            return "redirect:/auth/verify-otp?email=" + email;
+            return redirectWithQuery("/auth/verify-otp", Map.of("email", normalizedEmail));
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:/auth/forgot-password";
@@ -526,12 +530,13 @@ public class ClientController {
     public String handleVerifyOtp(@RequestParam("email") String email,
             @RequestParam("otp") String otp,
             RedirectAttributes ra) {
+        String normalizedEmail = normalize(email);
         try {
-            String token = userService.verifyOtp(email, otp);
-            return "redirect:/auth/reset-password?email=" + email + "&token=" + token;
+            String token = userService.verifyOtp(normalizedEmail, otp);
+            return redirectWithQuery("/auth/reset-password", Map.of("email", normalizedEmail, "token", token));
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
-            return "redirect:/auth/verify-otp?email=" + email;
+            return redirectWithQuery("/auth/verify-otp", Map.of("email", normalizedEmail));
         }
     }
 
@@ -541,6 +546,8 @@ public class ClientController {
             @RequestParam("password") String password,
             @RequestParam("confirmPassword") String confirmPassword,
             RedirectAttributes ra) {
+        String normalizedEmail = normalize(email);
+        String normalizedToken = normalize(token);
         try {
             if (!password.equals(confirmPassword)) {
                 throw new IllegalArgumentException("Mật khẩu xác nhận không khớp.");
@@ -548,13 +555,22 @@ public class ClientController {
             if (password.length() < 8) {
                 throw new IllegalArgumentException("Mật khẩu phải có ít nhất 8 ký tự.");
             }
-            userService.resetPassword(email, token, password);
+            userService.resetPassword(normalizedEmail, normalizedToken, password);
             ra.addFlashAttribute("success", "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.");
             return "redirect:/auth/login";
         } catch (Exception e) {
             ra.addFlashAttribute("error", e.getMessage());
-            return "redirect:/auth/reset-password?email=" + email + "&token=" + token;
+            return redirectWithQuery("/auth/reset-password", Map.of("email", normalizedEmail, "token", normalizedToken));
         }
+    }
+
+    private String redirectWithQuery(String path, Map<String, ?> params) {
+        String query = params.entrySet().stream()
+                .map(entry -> UriUtils.encodeQueryParam(entry.getKey(), StandardCharsets.UTF_8)
+                        + "="
+                        + UriUtils.encodeQueryParam(String.valueOf(entry.getValue()), StandardCharsets.UTF_8))
+                .collect(Collectors.joining("&"));
+        return "redirect:" + path + (query.isEmpty() ? "" : "?" + query);
     }
 
     @PostMapping("/auth/register")

@@ -17,8 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.security.SecureRandom;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 @Service
@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private EmailService emailService;
 
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
 
     @Override
     public UserEntity registerUser(String fullName, String email, String phone, String password) {
@@ -188,26 +188,29 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void forgotPassword(String email) {
-        UserEntity user = userRepository.findByEmail(email)
+        String normalizedEmail = normalize(email);
+        UserEntity user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Email không tồn tại trong hệ thống."));
 
-        String otp = String.format("%06d", random.nextInt(999999));
+        String otp = String.format("%06d", random.nextInt(1_000_000));
         String token = UUID.randomUUID().toString();
         LocalDateTime now = LocalDateTime.now();
 
         PasswordResetTokenEntity resetToken = new PasswordResetTokenEntity(
-                email, otp, token, now.plusMinutes(5), now.plusMinutes(15)
+                normalizedEmail, otp, token, now.plusMinutes(5), now.plusMinutes(15)
         );
         tokenRepository.save(resetToken);
 
-        emailService.sendOtpEmail(email, otp);
+        emailService.sendOtpEmail(user.getEmail(), otp);
     }
 
     @Override
     @Transactional
     public String verifyOtp(String email, String otp) {
+        String normalizedEmail = normalize(email);
+        String normalizedOtp = normalize(otp);
         PasswordResetTokenEntity resetToken = tokenRepository
-                .findByEmailAndOtpAndUsedFalse(email, otp)
+                .findByEmailAndOtpAndUsedFalse(normalizedEmail, normalizedOtp)
                 .orElseThrow(() -> new IllegalArgumentException("Mã OTP không đúng hoặc đã hết hạn."));
 
         if (resetToken.getOtpExpiry().isBefore(LocalDateTime.now())) {
@@ -220,15 +223,17 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void resetPassword(String email, String token, String newPassword) {
+        String normalizedEmail = normalize(email);
+        String normalizedToken = normalize(token);
         PasswordResetTokenEntity resetToken = tokenRepository
-                .findByEmailAndTokenAndUsedFalse(email, token)
+                .findByEmailAndTokenAndUsedFalse(normalizedEmail, normalizedToken)
                 .orElseThrow(() -> new IllegalArgumentException("Token không hợp lệ."));
 
         if (resetToken.getTokenExpiry().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Token đã hết hạn.");
         }
 
-        UserEntity user = userRepository.findByEmail(email)
+        UserEntity user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Email không tồn tại."));
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
