@@ -15,7 +15,7 @@ public interface ProductService {
     void deleteProduct(int id);
     ProductResponse restoreProduct(int id);
 
-    Page<ShopProductResponse> getShopProducts(String search, Integer categoryId, String sort, String price, int page);
+    Page<ShopProductResponse> getShopProducts(String search, List<Integer> categoryIds, String sort, String price, int page);
     long countByPriceRange(long min, long max);
     long countUnderPrice(long max);
     long countOverPrice(long min);

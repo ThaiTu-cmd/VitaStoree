@@ -390,11 +390,14 @@ const ShopFilter = (() => {
       // Price: single-choice
       const selectedPrice = document.querySelector('input[name="price"]:checked');
       if (selectedPrice) params.set("price", selectedPrice.value);
-      // Category: single-choice, click selected item again to clear.
-      const selectedCategory = document.querySelector(
-        'input[name="category"]:checked',
-      );
-      if (selectedCategory) params.set("category", selectedCategory.value);
+      // Category: multi-select
+      const selectedCategories = new Set();
+      document.querySelectorAll('input[name="category"]:checked').forEach((cb) => {
+        selectedCategories.add(cb.value);
+      });
+      selectedCategories.forEach((category) => {
+        params.append("category", category);
+      });
       // Sort
     const sort = document.querySelector(".sort-select");
     if (sort && sort.value && sort.value !== "default") {
@@ -425,11 +428,11 @@ const ShopFilter = (() => {
   };
 
   const init = () => {
-    const filterForm = document.querySelector("#filter-form");
-    if (!filterForm) return;
+    const filterForms = document.querySelectorAll("#filter-form");
+    if (!filterForms.length) return;
 
     // Normalize legacy URLs that may contain multiple checked price values.
-    const priceChecked = filterForm.querySelectorAll(
+    const priceChecked = document.querySelectorAll(
       'input[name="price"]:checked',
     );
     if (priceChecked.length > 1) {
@@ -438,25 +441,16 @@ const ShopFilter = (() => {
       });
     }
 
-    const categoryChecked = filterForm.querySelectorAll(
-      'input[name="category"]:checked',
-    );
-    if (categoryChecked.length > 1) {
-      categoryChecked.forEach((el, idx) => {
-        if (idx > 0) el.checked = false;
-      });
-    }
-
-    filterForm.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    document.querySelectorAll('#filter-form input[type="checkbox"]').forEach((cb) => {
       cb.addEventListener("change", () => {
-        if (cb.name === "price" && cb.checked) {
-          filterForm.querySelectorAll('input[name="price"]').forEach((el) => {
-            if (el !== cb) el.checked = false;
+        if (cb.name === "price") {
+          document.querySelectorAll('input[name="price"]').forEach((el) => {
+            el.checked = cb.checked && el.value === cb.value;
           });
         }
-        if (cb.name === "category" && cb.checked) {
-          filterForm.querySelectorAll('input[name="category"]').forEach((el) => {
-            if (el !== cb) el.checked = false;
+        if (cb.name === "category") {
+          document.querySelectorAll('input[name="category"]').forEach((el) => {
+            if (el.value === cb.value) el.checked = cb.checked;
           });
         }
         clearTimeout(debounceTimer);
@@ -482,16 +476,19 @@ const ShopFilter = (() => {
       });
     }
 
-    // Clear category filters
-    const clearBtn = document.querySelector(".filter-clear-all");
-    if (clearBtn) {
+    // Clear all filters
+    const clearBtns = document.querySelectorAll(".filter-clear-all");
+    clearBtns.forEach((clearBtn) => {
       clearBtn.addEventListener("click", () => {
-        filterForm
-          .querySelectorAll('input[name="category"]')
+        document
+          .querySelectorAll('input[name="category"], input[name="price"]')
           .forEach((cb) => (cb.checked = false));
+        document
+          .querySelectorAll(".shop-search-input, .search-input")
+          .forEach((input) => (input.value = ""));
         updateResults();
       });
-    }
+    });
 
     // Collapsible filter sections
     document.querySelectorAll(".filter-section-title").forEach((title) => {

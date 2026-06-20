@@ -100,7 +100,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Page<ShopProductResponse> getShopProducts(String search, Integer categoryId, String sort, String price, int page) {
+    public Page<ShopProductResponse> getShopProducts(String search, List<Integer> categoryIds, String sort, String price, int page) {
         Specification<ProductsEntity> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -110,8 +110,8 @@ public class ProductServiceImpl implements ProductService {
                 predicates.add(cb.like(cb.lower(root.get("productName")), "%" + search.toLowerCase() + "%"));
             }
 
-            if (categoryId != null && categoryId > 0) {
-                predicates.add(cb.equal(root.get("category").get("categoryId"), categoryId));
+            if (categoryIds != null && !categoryIds.isEmpty()) {
+                predicates.add(root.get("category").get("categoryId").in(categoryIds));
             }
 
             if (price != null && !price.isBlank()) {

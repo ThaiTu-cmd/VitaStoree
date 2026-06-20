@@ -65,22 +65,20 @@ public class ClientController {
     @GetMapping("/shop")
     public String shop(
             @RequestParam(value = "q", required = false) String q,
-            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "category", required = false) List<String> category,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "price", required = false) String price,
             @RequestParam(value = "page", defaultValue = "1") int page,
             Model model) {
-        Integer categoryId = null;
-        if (category != null && !category.isBlank()) {
+        List<Integer> categoryIds = Collections.emptyList();
+        if (category != null && !category.isEmpty()) {
             List<ShopCategoryResponse> allCats = categoryService.getShopCategories();
-            for (ShopCategoryResponse c : allCats) {
-                if (c.getSlug().equals(category)) {
-                    categoryId = c.getId();
-                    break;
-                }
-            }
+            categoryIds = allCats.stream()
+                    .filter(c -> category.contains(c.getSlug()))
+                    .map(ShopCategoryResponse::getId)
+                    .collect(Collectors.toList());
         }
-        Page<ShopProductResponse> productPage = productService.getShopProducts(q, categoryId, sort, price, page);
+        Page<ShopProductResponse> productPage = productService.getShopProducts(q, categoryIds, sort, price, page);
         model.addAttribute("products", productPage.getContent());
         model.addAttribute("totalPages", productPage.getTotalPages());
         model.addAttribute("currentPage", page);
